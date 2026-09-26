@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>八艺 · 这条评论该回哪个字</title>
+<style>
+  :root {
+    --bg: #0b0d12;
+    --panel: #141821;
+    --panel-2: #1b2130;
+    --line: #262d3d;
+    --text: #e8ecf5;
+    --muted: #8b95ab;
+    --accent: #6ea8fe;
+    --good: #3fb950;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: radial-gradient(1200px 700px at 15% -10%, #1a2233 0%, var(--bg) 55%);
+    color: var(--text);
+    font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Source Han Sans SC",
+                 system-ui, -apple-system, "Segoe UI", sans-serif;
+    min-height: 100vh;
+    padding: 28px 20px 60px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+
+  /* ---------------------------------------------------------- 页头 */
+  header { margin-bottom: 22px; }
+  .glyphs {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    font-size: 40px; font-weight: 700; letter-spacing: 2px;
+    line-height: 1.15; margin-bottom: 10px;
+  }
+  .glyphs span {
+    background: linear-gradient(180deg, #ffffff 0%, #93a4c4 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    transition: transform .25s ease;
+  }
+  .glyphs span:hover { transform: translateY(-4px); }
+  h1 { font-size: 17px; font-weight: 600; margin: 0 0 6px; color: #c8d2e6; }
+  .sub { color: var(--muted); font-size: 13px; line-height: 1.7; margin: 0; }
+  .sub code {
+    background: var(--panel-2); border: 1px solid var(--line);
+    padding: 1px 6px; border-radius: 5px; font-size: 12px; color: #a9b8d6;
+  }
+  .sub a { color: var(--accent); text-decoration: none; }
+  .sub a:hover { text-decoration: underline; }
+
+  /* ---------------------------------------------------------- 布局 */
+  .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+  @media (max-width: 900px) { .cols { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 18px;
+  }
+  .card h2 {
+    font-size: 13px; font-weight: 600; color: var(--muted);
+    margin: 0 0 12px; letter-spacing: .08em; text-transform: uppercase;
+  }
+
+  /* ---------------------------------------------------------- 输入 */
+  textarea {
+    width: 100%; min-height: 168px; resize: vertical;
+    background: var(--bg); color: var(--text);
+    border: 1px solid var(--line); border-radius: 10px;
+    padding: 13px 14px; font-size: 15px; line-height: 1.75;
+    font-family: inherit; outline: none; transition: border-color .18s;
+  }
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: #5a6478; }
+
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .speeds { display: flex; background: var(--bg); border: 1px solid var(--line); border-radius: 9px; padding: 3px; }
+  .speeds button {
+    background: transparent; border: 0; color: var(--muted);
+    padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer;
+    font-family: inherit; transition: all .15s;
+  }
+  .speeds button span { font-size: 11px; opacity: .6; margin-left: 3px; }
+  .speeds button.on { background: var(--panel-2); color: var(--text); }
+  .speeds button:hover:not(.on) { color: #b9c4da; }
+  .go {
+    margin-left: auto; background: var(--accent); color: #06101f;
+    border: 0; border-radius: 9px; padding: 10px 26px;
+    font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
+    transition: filter .15s, transform .1s;
+  }
+  .go:hover:not(:disabled) { filter: brightness(1.1); }
+  .go:active:not(:disabled) { transform: translateY(1px); }
+  .go:disabled { opacity: .45; cursor: not-allowed; }
+
+  /* ---------------------------------------------------------- 示例 */
+  .examples { margin-top: 16px; }
+  .examples .lbl { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    background: var(--panel-2); border: 1px solid var(--line); color: #b9c4da;
+    border-radius: 7px; padding: 5px 11px; font-size: 13px;
+    cursor: pointer; font-family: inherit; transition: all .15s;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--text); }
+
+  /* ---------------------------------------------------------- 结果 */
+  .verdict { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+  .verdict .big {
+    width: 84px; height: 84px; flex: 0 0 84px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 46px; font-weight: 700; border-radius: 16px;
+    background: var(--panel-2); border: 1px solid var(--line);
+    color: var(--muted); transition: all .3s ease;
+  }
+  .verdict .big.live { color: #fff; }
+  .verdict .meta { min-width: 0; }
+  .verdict .conf { font-size: 30px; font-weight: 700; line-height: 1.15; }
+  .verdict .hint { color: var(--muted); font-size: 13px; margin-top: 5px; line-height: 1.6; }
+
+  .bars { display: flex; flex-direction: column; gap: 6px; }
+  .bar { display: grid; grid-template-columns: 26px 1fr 58px; align-items: center; gap: 10px; }
+  .bar .ch { font-size: 17px; font-weight: 600; text-align: center; color: var(--muted); transition: color .25s; }
+  .bar.top .ch { color: #fff; }
+  .track { background: var(--bg); border-radius: 5px; height: 22px; overflow: hidden; }
+  .fill {
+    height: 100%; width: 0; border-radius: 5px;
+    background: var(--muted); opacity: .5;
+    transition: width .5s cubic-bezier(.2,.8,.2,1), background .25s, opacity .25s;
+  }
+  .bar.top .fill { opacity: 1; }
+  .bar .pct { font-size: 12px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+  .bar.top .pct { color: var(--text); font-weight: 600; }
+
+  .stats {
+    display: flex; gap: 14px; flex-wrap: wrap; margin-top: 16px;
+    padding-top: 13px; border-top: 1px solid var(--line);
+    font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums;
+  }
+  .stats b { color: #b9c4da; font-weight: 600; }
+  .status { font-size: 13px; color: var(--muted); }
+  .status.err { color: #ff7b72; }
+  .spin { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--line);
+          border-top-color: var(--accent); border-radius: 50%; animation: sp .7s linear infinite;
+          vertical-align: -1px; margin-right: 6px; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="glyphs" id="glyphs"></div>
+    <h1>把别人的评论粘进来，看看该回哪个字</h1>
+    <p class="sub">
+      词表是八个字：<b>典 孝 急 乐 蚌 批 赢 麻</b> ——
+      对方陈述观点回典、替强者说话回孝、分点辩论回急、看不懂回乐、
+      被要求表态回蚌、一刀切批判回批、自己蹦出金句回赢、驳不动了回麻。
+    </p>
+    <p class="sub">
+      引擎是 <a href="https://github.com/TheoLeeCJ/SemIf-OpenJev" target="_blank" rel="noopener">SemIf-OpenJev</a>（开源版 Jev，MIT），
+      基座是 Qwen3.5-2B。它<b>不生成任何文字</b>：把每个字绑到一个单 token 的字母槽位，
+      一次前向传播直接读出概率分布。干净测试集 24 条实测 <b>96%</b>。
+      <code>Ctrl</code> + <code>Enter</code> 快速判定。
+    </p>
+  </header>
+
+  <div class="cols">
+    <!-- 输入 -->
+    <section class="card">
+      <h2>输入评论</h2>
+      <textarea id="text" placeholder="把别人的一条评论粘进来，比如微博、知乎、B 站、贴吧、小红书下面的某条留言……"></textarea>
+      <div class="row">
+        <div class="speeds" id="speeds">
+          <button data-perms="3">快 <span>0.3s</span></button>
+          <button data-perms="5" class="on">标准 <span>0.6s</span></button>
+          <button data-perms="7">更稳 <span>0.8s</span></button>
+        </div>
+        <button class="go" id="go">判定</button>
+      </div>
+      <div class="examples">
+        <div class="lbl">或者点一条示例评论试试（括号里是它该回的梗）：</div>
+        <div class="chips" id="chips"></div>
+      </div>
+    </section>
+
+    <!-- 结果 -->
+    <section class="card">
+      <h2>判定结果</h2>
+      <div class="verdict">
+        <div class="big" id="big">?</div>
+        <div class="meta">
+          <div class="conf" id="conf">等待输入</div>
+          <div class="hint" id="hint">八个字的概率分布会显示在下面。</div>
+        </div>
+      </div>
+      <div class="bars" id="bars"></div>
+      <div class="stats">
+        <span class="status" id="status">就绪</span>
+        <span id="stats"></span>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let LABELS = [], EXAMPLES = [], PERMS = 5, BUSY = false;
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+/* ------------------------------------------------------------ 初始化 */
+async function boot() {
+  try {
+    const d = await (await fetch("/api/labels")).json();
+    LABELS = d.labels;
+    EXAMPLES = d.examples;
+  } catch (e) {
+    setStatus("拿不到词表配置：" + e.message, true);
+    return;
+  }
+
+  $("glyphs").innerHTML = LABELS.map((l) => `<span>${esc(l.id)}</span>`).join("");
+  renderEmptyBars();
+
+  $("chips").innerHTML = EXAMPLES.map((ex, i) =>
+    `<button class="chip" data-i="${i}">${esc(ex.label)} · ${esc(ex.text.slice(0, 14))}…</button>`
+  ).join("");
+  $("chips").addEventListener("click", (e) => {
+    const b = e.target.closest(".chip");
+    if (!b) return;
+    $("text").value = EXAMPLES[+b.dataset.i].text;
+    run();
+  });
+
+  $("speeds").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-perms]");
+    if (!b) return;
+    PERMS = +b.dataset.perms;
+    [...$("speeds").children].forEach((x) => x.classList.toggle("on", x === b));
+    if ($("text").value.trim()) run();
+  });
+
+  $("go").addEventListener("click", run);
+  $("text").addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); run(); }
+  });
+  checkHealth();
+}
+
+async function checkHealth() {
+  try {
+    const d = await (await fetch("/api/health")).json();
+    const name = d.model_name || String(d.model || "").split(/[\\/]/).pop();
+    setStatus(`就绪 · ${name} · ${d.device} · ${d.dtype}`);
+  } catch { setStatus("就绪"); }
+}
+
+function setStatus(msg, err) {
+  const el = $("status");
+  el.className = "status" + (err ? " err" : "");
+  el.textContent = msg;
+}
+
+/* ------------------------------------------------------------ 渲染 */
+function renderEmptyBars() {
+  $("bars").innerHTML = LABELS.map((l) => `
+    <div class="bar" data-id="${esc(l.id)}">
+      <div class="ch">${esc(l.id)}</div>
+      <div class="track"><div class="fill" style="width:0%"></div></div>
+      <div class="pct">—</div>
+    </div>`).join("");
+}
+
+function render(result) {
+  const max = Math.max(...result.ranking.map((r) => r.probability), 0.0001);
+  const top = result.ranking[0];
+  const byId = Object.fromEntries(result.ranking.map((r) => [r.id, r]));
+
+  const big = $("big");
+  big.textContent = top.id;
+  big.classList.add("live");
+  big.style.background = top.accent + "26";
+  big.style.borderColor = top.accent;
+  big.style.color = top.accent;
+
+  $("conf").textContent = (top.probability * 100).toFixed(1) + "%  " + top.id;
+  $("conf").style.color = top.accent;
+  $("hint").textContent = top.hint;
+
+  LABELS.forEach((l) => {
+    const row = $("bars").querySelector(`.bar[data-id="${CSS.escape(l.id)}"]`);
+    const r = byId[l.id];
+    const p = r ? r.probability : 0;
+    row.classList.toggle("top", l.id === top.id);
+    const fill = row.querySelector(".fill");
+    fill.style.width = Math.max((p / max) * 100, p > 0 ? 2 : 0) + "%";
+    fill.style.background = l.accent;
+    row.querySelector(".pct").textContent = (p * 100).toFixed(1) + "%";
+  });
+
+  const perms = result.permutations || 1;
+  const asked = result.permutations_requested || perms;
+  const modeName = perms > 1
+    ? `${perms} 种选项排列取平均（抗位置偏置）`
+    : (asked > 1 ? "输入较长，已自动降为单次前向" : "单次前向（最快，有位置噪声）");
+  $("stats").innerHTML =
+    `<b>${result.forward_ms}</b> ms 推理 · <b>${result.total_ms}</b> ms 端到端` +
+    (result.input_tokens ? ` · <b>${result.input_tokens}</b> token` : "") +
+    ` · 领先 <b>${(result.margin * 100).toFixed(1)}</b> 个点 · ${modeName}`;
+}
+
+/* ------------------------------------------------------------ 请求 */
+async function run() {
+  const text = $("text").value.trim();
+  if (!text) { setStatus("先输入一段文本", true); return; }
+  if (BUSY) return;
+  BUSY = true;
+  $("go").disabled = true;
+  setStatus("判定中…");
+  $("status").innerHTML = '<span class="spin"></span>判定中…';
+
+  try {
+    const resp = await fetch("/api/decide", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, permutations: PERMS }),
+    });
+    const d = await resp.json();
+    if (!d.ok) throw new Error(d.error || ("HTTP " + resp.status));
+    render(d);
+    setStatus(`就绪 · ${d.device}`);
+  } catch (e) {
+    setStatus("失败：" + e.message, true);
+  } finally {
+    BUSY = false;
+    $("go").disabled = false;
+  }
+}
+
+boot();
+</script>
+</body>
+</html>

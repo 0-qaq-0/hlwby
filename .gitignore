@@ -1,0 +1,22 @@
+# 虚拟环境
+.venv/
+
+# 模型权重（约 4.3 GB，用 scripts/download_model.py 下载）
+models/
+
+# 上游引擎（用 scripts/setup_vendor.ps1 克隆）
+vendor/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# 环境与系统文件
+.env
+.DS_Store
+Thumbs.db
+
+# 无头浏览器等工具的临时缓存
+.cache/

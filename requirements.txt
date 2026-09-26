@@ -1,0 +1,13 @@
+# 运行时依赖（Python 3.10+）
+#
+# GPU 版本要装 CUDA wheel，否则 pip 默认给的是 CPU-only：
+#   pip install torch==2.14.0+cu130 --index-url https://download.pytorch.org/whl/cu130
+# Blackwell（RTX 50 系）需要 cu128 及以上。
+torch==2.14.0
+transformers==5.17.0
+accelerate==1.15.0
+safetensors==0.8.0
+huggingface-hub==1.33.0
+tokenizers==0.23.2
+numpy==2.2.6
+sentencepiece==0.2.2
