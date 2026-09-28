@@ -365,6 +365,7 @@ curl -X POST http://127.0.0.1:8770/api/decide `
 │   ├── profiles.py             # ★ 判断类型：数据模型 + 校验规则 + 存取/导入导出
 │   ├── builtin_profiles/       # ★ 内置示例类型：客服分流、内容处置
 │   ├── textcheck.py            # 字面重合度（泄漏检查与页面校验共用同一套）
+│   ├── console.py              # 让中文输出在非 UTF-8 控制台上不崩（CI 上真红过一次）
 │   ├── engine.py               # SemIf 读出机制 + 批量排列平均 + 自适应降档
 │   ├── server.py               # 标准库 HTTP 服务 + JSON API
 │   └── version.py              # 版本号唯一出处
@@ -372,7 +373,7 @@ curl -X POST http://127.0.0.1:8770/api/decide `
 │   ├── index.html              #   四个标签页的骨架
 │   ├── style.css               #   设计系统（深/浅色）
 │   └── js/                     #   api / util / state + tabs/{judge,labels,eval,settings}
-├── tests/                      # ★ 199 个单元测试，只用标准库 unittest
+├── tests/                      # ★ 204 个单元测试，只用标准库 unittest
 ├── data/
 │   ├── eval_clean.jsonl        # ★ 干净测试集（52 条），以它为准
 │   ├── eval_overlap.jsonl      # 对照集：页面示例变体 + 已知泄漏样本

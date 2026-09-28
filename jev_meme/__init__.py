@@ -4,6 +4,14 @@
 想换一套判断类型，换一个 ``Profile``，不用动模型，更不用重训。
 """
 
+from .console import enable_utf8 as _enable_utf8
+
+# 这个包是**应用**不是库，所以 import 时就把中文输出修好：
+# 英文 Windows 上往管道里 print 中文会直接 UnicodeEncodeError 崩掉
+# （release 工作流在 windows-latest 上就是这么红的）。见 jev_meme/console.py。
+# 不 import 本包的独立脚本（scripts/build_release.py）自己显式调一次。
+_enable_utf8()
+
 from .engine import (
     DEFAULT_MODEL_DIR,
     DEFAULT_PERMUTATIONS,

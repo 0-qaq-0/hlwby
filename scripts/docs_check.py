@@ -35,6 +35,27 @@ sys.path.insert(0, str(PROJECT_ROOT))
 README = PROJECT_ROOT / "README.md"
 EVAL_RESULT = PROJECT_ROOT / "data" / "eval_result.json"
 
+
+def _enable_utf8() -> None:
+    """把 stdout / stderr 切到 UTF-8。
+
+    和 `jev_meme/console.py` 里的同名函数是同一件事，**故意各写一份**：
+    import 那个会连带拉起 `jev_meme/__init__` -> engine -> torch，
+    而这个检查脚本的价值就在于「别的东西坏了的时候它还能跑」。
+    见 `jev_meme/console.py` 开头对这件事的完整说明。
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):
+            pass
+
+
+_enable_utf8()
+
 #: 这些路径在 README 里会出现，但**不一定**存在于当前工作区（不入库的东西）。
 SKIP_PREFIXES = ("models/", ".venv/", "dist/", "data/profiles/", "data/eval_results/")
 

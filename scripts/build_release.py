@@ -464,7 +464,30 @@ def check_tag(tag: str, version: str) -> None:
     print(f"[build] tag 校验通过：{tag} == {version}")
 
 
+def _enable_utf8() -> None:
+    """把 stdout / stderr 切到 UTF-8。
+
+    这个脚本刻意不 import ``jev_meme``（见模块开头），所以拿不到包里那份
+    ``jev_meme.console.enable_utf8``，只能自己来一遍。
+
+    **这是真踩过的坑**：release 工作流在 ubuntu 上构建成功、windows-latest 上
+    失败，日志只有一句「Process completed with exit code 1」—— 因为
+    `print("[build] 版本 …")` 在 cp1252 的 stdout 上直接抛 UnicodeEncodeError，
+    而那条报错本身也是中文，于是连报错都打不出来。本地怎么试都好，
+    因为本地是 cp936，中文编得进去。
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):
+            pass
+
+
 def main(argv: list[str] | None = None) -> int:
+    _enable_utf8()
     source_version, schema = read_version()
     parser = argparse.ArgumentParser(
         description="构建「八艺」release 包（纯标准库，不需要装 torch）",

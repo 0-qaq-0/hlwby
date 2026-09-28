@@ -89,6 +89,19 @@ README 里同时写着两个不同的单元测试数量），所以把它们都�
 * `scripts/page_check.py` —— 升级成多文件版：JS 里 `$("x")` 引用的 id 必须在 HTML 里存在，
   少一个就是运行时崩溃，静态检查提前抓
 
+### 5. 顺手修掉的
+
+* **中文输出不再因控制台编码崩掉**：英文 Windows 上把脚本输出重定向到文件
+  （或者被别的程序捕获）时，`print` 中文会抛 `UnicodeEncodeError`。现在
+  `jev_meme/console.py` 会把 stdout 切到 UTF-8，独立的检查脚本各自内联同一段处理。
+  这条是 release 工作流在 windows-latest 上真的红过一次才发现的。
+* **`GET /api/eval?profile=../eval_result` 能读到 `data/` 下别的文件** ——
+  profile id 会拼进文件名，现在先过一遍 id 白名单，路由层直接返回 400。
+* **手写的 `data/profiles/<id>.json` 里 id 和文件名不一致**会导致删不掉、列表里出现
+  两个同 id 的条目 —— 现在**文件名就是 id**。
+* **`.ps1` 一律 CRLF + UTF-8 BOM**：PowerShell 5.1 读没有 BOM 的脚本会按 ANSI 解码，
+  中文提示全变乱码（`run.ps1` 和 `scripts/setup_vendor.ps1` 都中过）。
+
 ---
 
 ## 数字

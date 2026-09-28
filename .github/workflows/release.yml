@@ -80,12 +80,20 @@ jobs:
 
       - name: 构建 release 包
         shell: bash
+        # PYTHONIOENCODING 是双保险：脚本自己会把 stdout 切到 UTF-8
+        # （英文 runner 的 stdout 是 cp1252，print 中文会 UnicodeEncodeError，
+        #   这条已经真的把 windows 构建打红过一次），但环境变量能让它拉起来的
+        # 任何子进程也一起安全。
+        env:
+          PYTHONIOENCODING: utf-8
         # --expect-tag 会校验 tag 与 jev_meme/version.py 里的版本号一致，
         # 不一致直接失败 —— 免得 Release 页面写着 v4.0.0、包里却是别的版本。
         run: python scripts/build_release.py --out dist --platform "${{ matrix.platform }}" --expect-tag "$TAG"
 
       - name: 打印包内容摘要（日志里能直接看到装了什么）
         shell: bash
+        env:
+          PYTHONIOENCODING: utf-8
         # manifest 在 zip 里面，直接读出来打印 —— 打包结果一目了然，
         # 出问题时不用把 artifact 下回本地翻。
         run: |
