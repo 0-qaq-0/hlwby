@@ -1,14 +1,14 @@
 # HTTP API 参考
 
 这份文档解决一个问题：**要写脚本或者把判定接进自己的系统，该打哪个接口、传什么、会拿到什么、
-出错长什么样。** 逐条对齐 `jev_meme/server.py`（服务端实现）和 `jev_meme/engine.py`（判定核心），
+出错长什么样。** 逐条对齐 `biaochi/server.py`（服务端实现）和 `biaochi/engine.py`（判定核心），
 所有路由、参数上限、错误文案都是从代码里抄下来并且**实测跑过一遍**的。
 
-> **以代码为准。** 这份文档如果和 `jev_meme/server.py` 打架，以代码为准 ——
+> **以代码为准。** 这份文档如果和 `biaochi/server.py` 打架，以代码为准 ——
 > 但那种情况应该被当成 bug 报出来，而不是当成「文档就是这样写的」。
 >
 > 本文的示例假定服务在 **`http://127.0.0.1:8770`** 跑着：
-> `.\.venv\Scripts\python.exe -m jev_meme.server`（模型在启动时加载一次并常驻，
+> `.\.venv\Scripts\python.exe -m biaochi.server`（模型在启动时加载一次并常驻，
 > 之后每个请求就是一次前向传播）。
 
 ---
@@ -27,7 +27,7 @@
 | 模型输入上限 | **4096 token**（`engine.MAX_TOKENS`），超限报错、**不截断** | `engine._build_prompt()` |
 | `Content-Type` | **不校验**（`text/plain` 发 JSON 也认） | 实测确认 |
 | `HEAD` | 等价于 `GET`，只是不写响应体 | `do_HEAD()` |
-| 版本号 | 在 `GET /api/health` 的 `version` 字段里（`4.0.0`） | `jev_meme/version.py` |
+| 版本号 | 在 `GET /api/health` 的 `version` 字段里（`4.1.0`） | `biaochi/version.py` |
 
 ### 请求体是怎么被检查的
 
@@ -105,7 +105,7 @@
 ```json
 {
   "ok": true,
-  "version": "4.0.0",
+  "version": "4.1.0",
   "loaded": true,
   "device": "cuda:0",
   "dtype": "bfloat16",
@@ -123,7 +123,7 @@
 
 | 字段 | 含义 |
 |---|---|
-| `version` | 服务版本（`jev_meme/version.py`） |
+| `version` | 服务版本（`biaochi/version.py`） |
 | `loaded` | 模型是否已加载（启动时加载完才开服务，正常恒为 `true`） |
 | `device` / `dtype` | 实际跑在哪个设备、什么精度（`cuda` 是 bfloat16，`cpu` 是 float32） |
 | `model` / `model_name` | 模型目录全路径 / 目录名 |
@@ -541,7 +541,7 @@ adaptive_permutations(tokens, requested) = max(1, min(requested, TOKEN_BUDGET //
 | `id` 是内置类型 | 400 | `{"ok": false, "error": "「bayi」是内置类型，删不掉 —— 内置类型只读"}` |
 
 **只删用户类型**（`data/profiles/<id>.json`）。内置类型在代码里
-（`jev_meme/labels.py` + `jev_meme/builtin_profiles/*.json`），接口删不掉。
+（`biaochi/labels.py` + `biaochi/builtin_profiles/*.json`），接口删不掉。
 
 ---
 

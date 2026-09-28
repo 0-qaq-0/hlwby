@@ -37,7 +37,7 @@ function renderAbout() {
   const box = $("settings-about");
   box.innerHTML = `
     <p style="margin:0 0 10px">
-      <b>八艺</b>把一条中文评论粘进来，判定该用哪个字回 —— 内置词表是
+      <b>标尺</b>把一条中文评论粘进来，判定该用哪个字回 —— 内置词表是
       <b>典 孝 急 乐 蚌 批 赢 麻</b>。判定类型（词表、判定问法、示例）是
       <b>运行时的数据</b>，改它不用重训，也不用重启服务。
     </p>

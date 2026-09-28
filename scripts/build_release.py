@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""本地构建「八艺」的 release 包（zip）。
+"""本地构建「标尺」的 release 包（zip）。
 
 为什么要有这个脚本：仓库里躺着 30MB 的上游评测资产和 4.3GB 的模型权重，
 直接 `git archive` 出来的东西用户既下不动也用不上。这里用**一份集中的
@@ -9,7 +9,7 @@
 两个硬要求（都踩过坑）：
 
 1. **纯标准库**。CI 上不装 torch / transformers 也要能构建 —— 它们只是运行
-   时依赖。所以这里刻意不 import ``jev_meme``（它的 ``__init__`` 会牵连一堆
+   时依赖。所以这里刻意不 import ``biaochi``（它的 ``__init__`` 会牵连一堆
    东西），版本号用正则从 ``version.py`` 里抠出来。
 2. **可重复**。同一份源码构建两次，manifest 里每个文件的 sha256 必须一模一样。
    为此：文本文件打包时统一换行符（不然 Windows 检出的 CRLF 和 Linux 检出的
@@ -20,7 +20,7 @@
 
     python scripts/build_release.py --out dist        # 打 zip
     python scripts/build_release.py --list            # 只看包里有什么
-    python scripts/build_release.py --expect-tag v4.0.0   # CI 里校验 tag 与版本号
+    python scripts/build_release.py --expect-tag v4.1.0   # CI 里校验 tag 与版本号
 """
 
 from __future__ import annotations
@@ -48,7 +48,7 @@ _SCHEMA_RE = re.compile(r"^SCHEMA_VERSION\s*=\s*(\d+)", re.MULTILINE)
 
 #: 要收进包的顶层目录（相对仓库根）。
 #: ``vendor`` 也在里面，但只会收下必需子集 —— 过滤在 _file_is_excluded 里。
-PACKAGE_ROOTS = ("jev_meme", "web", "scripts", "tests", "data", "docs", "vendor")
+PACKAGE_ROOTS = ("biaochi", "web", "scripts", "tests", "data", "docs", "vendor")
 
 #: 仓库根下要单独收的文件。
 #: ``.gitignore`` / ``.gitattributes`` 也带上：体积可忽略，但用户把解压出来的
@@ -67,11 +67,11 @@ ROOT_FILES = (
 
 #: 缺了就直接构建失败 —— 这些是「包能用」的底线，静默少一个文件比报错更糟。
 REQUIRED_FILES = (
-    "jev_meme/__init__.py",
-    "jev_meme/engine.py",
-    "jev_meme/server.py",
-    "jev_meme/version.py",
-    "jev_meme/labels.py",
+    "biaochi/__init__.py",
+    "biaochi/engine.py",
+    "biaochi/server.py",
+    "biaochi/version.py",
+    "biaochi/labels.py",
     "web/index.html",
     "scripts/build_release.py",
     "scripts/download_model.py",
@@ -151,7 +151,7 @@ PLACEHOLDER_NAME = ".gitkeep"
 #
 # 上游 SemIf-OpenJev 整个仓库都在源码树里（含 ~30MB 的 results/benchmarks/demo
 # 资产），但运行时**只 import `semif_phase1.core` 和 `semif_phase1.direct`**
-# （见 jev_meme/engine.py）。所以包里只带这几个 .py + 许可 + 说明 + pyproject，
+# （见 biaochi/engine.py）。所以包里只带这几个 .py + 许可 + 说明 + pyproject，
 # 保证 MIT 归属完整、又不用让用户下 30MB 用不上的评测数据。
 
 VENDOR_ROOT = "vendor/SemIf-OpenJev"
@@ -234,12 +234,12 @@ VERSION_NAME = "VERSION"
 
 
 def read_version() -> tuple[str, int]:
-    """从 ``jev_meme/version.py`` 抠出 (__version__, SCHEMA_VERSION)。"""
-    text = (PROJECT_ROOT / "jev_meme" / "version.py").read_text(encoding="utf-8")
+    """从 ``biaochi/version.py`` 抠出 (__version__, SCHEMA_VERSION)。"""
+    text = (PROJECT_ROOT / "biaochi" / "version.py").read_text(encoding="utf-8")
     version = _VERSION_RE.search(text)
     schema = _SCHEMA_RE.search(text)
     if not version or not schema:
-        raise SystemExit("读不出 jev_meme/version.py 里的 __version__ / SCHEMA_VERSION")
+        raise SystemExit("读不出 biaochi/version.py 里的 __version__ / SCHEMA_VERSION")
     return version.group(1), int(schema.group(1))
 
 
@@ -445,7 +445,7 @@ def write_tree(dir_path: Path, payload: dict[str, bytes]) -> None:
 def check_tag(tag: str, version: str) -> None:
     """校验 tag 与 version.py 一致。
 
-    为什么要在构建期挡：release 页面上写着 v4.0.0、包里却是 3.9 的代码，
+    为什么要在构建期挡：release 页面上写着 v4.1.0、包里却是 3.9 的代码，
     是那种**发出去之后才发现**的错误。宁可让 CI 红。
     """
     cleaned = tag.strip()
@@ -455,7 +455,7 @@ def check_tag(tag: str, version: str) -> None:
     cleaned = cleaned.lstrip("vV")
     if cleaned != version:
         print(
-            f"[build] 失败：tag「{tag}」和 jev_meme/version.py 里的版本号「{version}」不一致。\n"
+            f"[build] 失败：tag「{tag}」和 biaochi/version.py 里的版本号「{version}」不一致。\n"
             f"[build] 请先把 version.py 的 __version__ 改成 {cleaned or '<版本号>'} 再打 tag，"
             f"或者把 tag 改成 v{version}。",
             file=sys.stderr,
@@ -467,8 +467,8 @@ def check_tag(tag: str, version: str) -> None:
 def _enable_utf8() -> None:
     """把 stdout / stderr 切到 UTF-8。
 
-    这个脚本刻意不 import ``jev_meme``（见模块开头），所以拿不到包里那份
-    ``jev_meme.console.enable_utf8``，只能自己来一遍。
+    这个脚本刻意不 import ``biaochi``（见模块开头），所以拿不到包里那份
+    ``biaochi.console.enable_utf8``，只能自己来一遍。
 
     **这是真踩过的坑**：release 工作流在 ubuntu 上构建成功、windows-latest 上
     失败，日志只有一句「Process completed with exit code 1」—— 因为
@@ -490,18 +490,18 @@ def main(argv: list[str] | None = None) -> int:
     _enable_utf8()
     source_version, schema = read_version()
     parser = argparse.ArgumentParser(
-        description="构建「八艺」release 包（纯标准库，不需要装 torch）",
+        description="构建「标尺」release 包（纯标准库，不需要装 torch）",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "例：\n"
             "  python scripts/build_release.py --out dist\n"
             "  python scripts/build_release.py --list\n"
-            "  python scripts/build_release.py --expect-tag v4.0.0\n"
+            "  python scripts/build_release.py --expect-tag v4.1.0\n"
         ),
     )
     parser.add_argument("--out", type=Path, default=Path("dist"), help="输出目录（默认 dist）")
     parser.add_argument("--version", default=source_version, help=f"覆盖版本号（默认 {source_version}）")
-    parser.add_argument("--name", default="hlwby", help="包名前缀（默认 hlwby）")
+    parser.add_argument("--name", default="biaochi", help="包名前缀（默认 biaochi）")
     parser.add_argument(
         "--platform",
         default=default_platform(),
@@ -526,7 +526,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--expect-tag",
         default=None,
-        help="校验 tag（如 v4.0.0）与 version.py 一致，不一致直接失败；CI 用",
+        help="校验 tag（如 v4.1.0）与 version.py 一致，不一致直接失败；CI 用",
     )
     args = parser.parse_args(argv)
 

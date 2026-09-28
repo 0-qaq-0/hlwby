@@ -36,12 +36,19 @@ function renderHeader(health) {
   state.health = health;
   state.version = health.version || "";
   $("version").textContent = health.version ? `v${health.version}` : "";
-  $("glyphs").innerHTML = (health.labels || []).map((id) => `<span>${esc(id)}</span>`).join("");
   const pill = $("health-pill");
   pill.className = "pill " + (health.loaded ? "ok" : "bad");
   $("health-text").innerHTML =
     `<b>${esc(health.model_name || "模型未加载")}</b> · ${esc(health.device || "?")}`;
   emit("health", health);
+}
+
+/** 品牌区那串字是**当前判断类型**的选项 —— 换类型它就跟着变。 */
+function renderBrand(profile) {
+  $("glyphs").innerHTML = (profile.labels || [])
+    .map((label) => `<span>${esc(label.id)}</span>`)
+    .join("");
+  $("hero-profile").textContent = profile.name;
 }
 
 function renderFooterEval(payload) {
@@ -113,6 +120,7 @@ async function boot() {
   evalTab.init();
   settings.init();
   on("profile-id", renderProfileSelect);
+  on("profile", renderBrand);
 
   let health = null;
   try {

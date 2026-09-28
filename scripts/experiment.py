@@ -22,7 +22,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from jev_meme import DEFAULT_MODEL_DIR, DEFAULT_REVISION, MEME_LABELS, MemeJev  # noqa: E402
+from biaochi import DEFAULT_MODEL_DIR, DEFAULT_REVISION, MEME_LABELS, Biaochi  # noqa: E402
 
 DEFAULT_DATA = PROJECT_ROOT / "data" / "eval_clean.jsonl"
 
@@ -99,7 +99,7 @@ def main() -> None:
     args = parser.parse_args()
 
     rows = load_rows(args.data)
-    engine = MemeJev(model_dir=args.model_dir, revision=args.revision, device=args.device)
+    engine = Biaochi(model_dir=args.model_dir, revision=args.revision, device=args.device)
     engine.load()
     print(f"设备 {engine.metadata['device']} | 数据 {args.data.name}（{len(rows)} 条）| {args.perms} 排列\n")
 

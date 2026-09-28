@@ -20,7 +20,7 @@
 分母取较短一侧的 n-gram 数量 —— 否则长描述天然占便宜，
 一句 20 字的测试句对上一段 120 字的锚点，重合率会被稀释成 0。
 
-算法本体在 `jev_meme/textcheck.py`（页面的词表编辑器用的是同一份实现，
+算法本体在 `biaochi/textcheck.py`（页面的词表编辑器用的是同一份实现，
 不然「检查通过」和「页面上没报警」会是两个不同的标准）。
 
 阈值（默认 8-gram）：
@@ -43,8 +43,8 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from jev_meme.labels import EXAMPLES, MEME_LABELS  # noqa: E402
-from jev_meme.textcheck import (  # noqa: E402
+from biaochi.labels import EXAMPLES, MEME_LABELS  # noqa: E402
+from biaochi.textcheck import (  # noqa: E402
     LEAK_THRESHOLD,
     WARN_THRESHOLD,
     overlap,
@@ -53,7 +53,7 @@ from jev_meme.textcheck import (  # noqa: E402
 
 DATA_DIR = PROJECT_ROOT / "data"
 
-#: 度量本身住在 `jev_meme/textcheck.py` —— 页面上的词表编辑器也要用同一套
+#: 度量本身住在 `biaochi/textcheck.py` —— 页面上的词表编辑器也要用同一套
 #: （用户改锚点时得当场知道「这条示例是不是抄了锚点」）。这里只是它的命令行外壳。
 
 
@@ -125,7 +125,7 @@ def main() -> None:
         print()
 
     # ------------------------------------------------------ 页面示例
-    print(f"===== [页面示例] jev_meme/labels.py EXAMPLES：{len(EXAMPLES)} 条 =====")
+    print(f"===== [页面示例] biaochi/labels.py EXAMPLES：{len(EXAMPLES)} 条 =====")
     example_bad = 0
     for example in EXAMPLES:
         score, who = worst_against(example["text"], args.n)

@@ -1,6 +1,6 @@
 @echo off
 rem ============================================================
-rem  hlwby / bayi - one click launcher (Windows)
+rem  biaochi / bayi - one click launcher (Windows)
 rem
 rem  This file only does three things:
 rem    1. switch the console to UTF-8 (chcp 65001) so Chinese shows up
@@ -26,16 +26,16 @@ where powershell >nul 2>nul
 if errorlevel 1 (
     echo.
     echo [错误] 找不到 powershell.exe —— 这台机器上的 Windows PowerShell 似乎不完整。
-    echo        八艺的启动器是用 PowerShell 写的，没有它没法自动建环境、装依赖、下模型。
+    echo        标尺的启动器是用 PowerShell 写的，没有它没法自动建环境、装依赖、下模型。
     echo        可以手动启动：先装好依赖，再执行
-    echo            .venv\Scripts\python.exe -m jev_meme.server --open-browser
+    echo            .venv\Scripts\python.exe -m biaochi.server --open-browser
     echo.
     pause
     endlocal
     exit /b 1
 )
 
-echo [启动] 正在准备八艺，第一次启动会比较久，请不要关掉这个窗口...
+echo [启动] 正在准备标尺，第一次启动会比较久，请不要关掉这个窗口...
 echo.
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\launch.ps1" %*

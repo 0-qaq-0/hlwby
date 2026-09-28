@@ -1,7 +1,7 @@
 ﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
-    八艺 —— 一键启动（Windows）。被仓库根目录的「一键启动.bat」调用。
+    标尺 —— 一键启动（Windows）。被仓库根目录的「一键启动.bat」调用。
 
 .DESCRIPTION
     按顺序做五件事，每一步都打印中文进度；任何一步失败都给出**能照着做**的提示，
@@ -88,7 +88,7 @@ $TORCH_INDEX = "https://download.pytorch.org/whl/cu130"
 $HF_MIRROR = "https://hf-mirror.com"
 
 Write-Host ""
-Write-Host "  八艺 —— 这条评论该回哪个字（一键启动）" -ForegroundColor White
+Write-Host "  标尺 —— 这条评论该回哪个字（一键启动）" -ForegroundColor White
 Write-Host "  项目目录：$root" -ForegroundColor DarkGray
 Write-Host ""
 
@@ -352,11 +352,11 @@ if (Test-PortInUse $Port) {
     Fail "端口 $Port 已经被别的程序占用$owner" @(
         "办法一：换个端口启动 —— 在 cmd 里执行：一键启动.bat -Port $($Port + 1)",
         "办法二：关掉占用的进程 —— 任务管理器里结束上面那个 PID，或执行 Stop-Process -Id <PID>",
-        "办法三：如果那个进程其实就是上次的八艺服务，直接在浏览器打开 http://127.0.0.1:$Port/ 就行"
+        "办法三：如果那个进程其实就是上次的标尺服务，直接在浏览器打开 http://127.0.0.1:$Port/ 就行"
     )
 }
 
-$serverArgs = @("-m", "jev_meme.server")
+$serverArgs = @("-m", "biaochi.server")
 if (-not (Test-RestHas $Rest "--model") -and -not (Test-RestHas $Rest "--model-dir")) {
     $serverArgs += @("--model", $Model)
 }

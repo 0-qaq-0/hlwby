@@ -39,10 +39,10 @@ EVAL_RESULT = PROJECT_ROOT / "data" / "eval_result.json"
 def _enable_utf8() -> None:
     """把 stdout / stderr 切到 UTF-8。
 
-    和 `jev_meme/console.py` 里的同名函数是同一件事，**故意各写一份**：
-    import 那个会连带拉起 `jev_meme/__init__` -> engine -> torch，
+    和 `biaochi/console.py` 里的同名函数是同一件事，**故意各写一份**：
+    import 那个会连带拉起 `biaochi/__init__` -> engine -> torch，
     而这个检查脚本的价值就在于「别的东西坏了的时候它还能跑」。
-    见 `jev_meme/console.py` 开头对这件事的完整说明。
+    见 `biaochi/console.py` 开头对这件事的完整说明。
     """
     for stream in (sys.stdout, sys.stderr):
         reconfigure = getattr(stream, "reconfigure", None)
@@ -148,14 +148,14 @@ else:
         body = raw_line.split("#", 1)[0]
         for token in re.split(r"[\s│├└─]+", body):
             token = token.strip()
-            if not token or token in ("/", "八艺/", "|"):
+            if not token or token in ("/", "标尺/", "|"):
                 continue
             if token.startswith(SKIP_PREFIXES):
                 continue
             # 同一行里写「一键启动.bat / start.sh」这种，按 / 切开逐个查。
             for piece in token.split("/"):
                 piece = piece.strip()
-                if not piece or piece == "八艺":
+                if not piece or piece == "标尺":
                     continue
                 checked += 1
                 if (PROJECT_ROOT / piece).exists():
@@ -177,7 +177,7 @@ else:
     for pattern, label in [
         ("scripts/*.py", "脚本"),
         ("scripts/*.ps1", "脚本"),
-        ("jev_meme/*.py", "模块"),
+        ("biaochi/*.py", "模块"),
         ("docs/*.md", "文档"),
     ]:
         for path in sorted(PROJECT_ROOT.glob(pattern)):

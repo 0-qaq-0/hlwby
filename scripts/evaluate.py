@@ -33,8 +33,8 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from jev_meme import DEFAULT_MODEL_DIR, DEFAULT_REVISION, MemeJev  # noqa: E402
-from jev_meme.profiles import (  # noqa: E402
+from biaochi import DEFAULT_MODEL_DIR, DEFAULT_REVISION, Biaochi  # noqa: E402
+from biaochi.profiles import (  # noqa: E402
     DEFAULT_PROFILE_ID,
     Profile,
     ProfileStore,
@@ -115,7 +115,7 @@ def main() -> None:
         sys.exit(2)
     label_ids = profile.label_ids
 
-    engine = MemeJev(model_dir=args.model_dir, revision=args.revision, device=args.device)
+    engine = Biaochi(model_dir=args.model_dir, revision=args.revision, device=args.device)
     engine.load()
     print(f"设备 {engine.metadata['device']} / {engine.metadata['dtype']}")
     print(f"类型 {profile.name}（{profile.id}）· 选项 {' '.join(label_ids)}")

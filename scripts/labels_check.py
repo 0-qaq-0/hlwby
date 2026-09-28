@@ -1,4 +1,4 @@
-"""八艺 —— 词汇表的一致性检查。
+"""「八艺」词表的一致性检查 —— 项目内置的那套判断类型。
 
 检查项：
   * 词表就是八个字，顺序固定
@@ -13,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from jev_meme.labels import CRITERION, EXAMPLES, LABEL_IDS, MEME_LABELS  # noqa: E402
+from biaochi.labels import CRITERION, EXAMPLES, LABEL_IDS, MEME_LABELS  # noqa: E402
 
 EXPECTED = "典孝急乐蚌批赢麻"
 

@@ -14,7 +14,7 @@
 name: release
 
 on:
-  # 打 tag 触发（v4.0.0 这种）
+  # 打 tag 触发（v4.1.0 这种）
   push:
     tags:
       - "v*"
@@ -22,7 +22,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "要发布的 tag（如 v4.0.0）。留空 = 当前 ref；从分支手动跑时会自动用 v<version.py 里的版本号>"
+        description: "要发布的 tag（如 v4.1.0）。留空 = 当前 ref；从分支手动跑时会自动用 v<version.py 里的版本号>"
         required: false
         default: ""
 
@@ -86,8 +86,8 @@ jobs:
         # 任何子进程也一起安全。
         env:
           PYTHONIOENCODING: utf-8
-        # --expect-tag 会校验 tag 与 jev_meme/version.py 里的版本号一致，
-        # 不一致直接失败 —— 免得 Release 页面写着 v4.0.0、包里却是别的版本。
+        # --expect-tag 会校验 tag 与 biaochi/version.py 里的版本号一致，
+        # 不一致直接失败 —— 免得 Release 页面写着 v4.1.0、包里却是别的版本。
         run: python scripts/build_release.py --out dist --platform "${{ matrix.platform }}" --expect-tag "$TAG"
 
       - name: 打印包内容摘要（日志里能直接看到装了什么）
@@ -188,10 +188,10 @@ jobs:
             gh release upload "$TAG" dist/*.zip --clobber
           elif git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
             echo "tag $TAG 已存在，基于它建 release"
-            gh release create "$TAG" dist/*.zip --title "八艺 $TAG" "${notes[@]}"
+            gh release create "$TAG" dist/*.zip --title "标尺 $TAG" "${notes[@]}"
           else
             echo "tag $TAG 还不存在，用 $SHA 新建"
-            gh release create "$TAG" dist/*.zip --title "八艺 $TAG" "${notes[@]}" --target "$SHA"
+            gh release create "$TAG" dist/*.zip --title "标尺 $TAG" "${notes[@]}" --target "$SHA"
           fi
 
           echo "发布完成："

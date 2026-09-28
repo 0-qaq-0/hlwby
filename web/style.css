@@ -1,4 +1,4 @@
-/* 八艺 · 判定台 —— 设计系统
+/* 标尺 · 判定台 —— 设计系统
  *
  * 无构建步骤：这个文件由服务器直接发出去，改完刷新就见效。
  * 主题用 CSS 变量，深色为默认；`html[data-theme="light"]` 覆盖一套浅色。
@@ -85,18 +85,35 @@ kbd {
   margin-bottom: 18px;
 }
 .brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
-.brand .glyphs {
-  display: flex; gap: 5px; font-size: 30px; font-weight: 700; letter-spacing: 1px;
-  line-height: 1.1;
+/* 字标。用渐变文字，和页面里那些选项字块保持同一套视觉语言。 */
+.wordmark {
+  font-size: 26px; font-weight: 800; letter-spacing: 4px; line-height: 1.1;
+  background: linear-gradient(180deg, var(--text) 0%, var(--muted) 140%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-.brand .glyphs span {
+.brand .ver { font-size: 11px; color: var(--muted-2); font-variant-numeric: tabular-nums; }
+.topbar .spacer { flex: 1 1 auto; }
+
+/* 品牌区：一串选项字 + 一句话说清这是什么工具。
+   那串字是**当前判断类型**的选项（跟着类型变），不是写死的八个字。 */
+.hero { margin-bottom: 18px; }
+.hero .glyphs {
+  display: flex; gap: 5px; flex-wrap: wrap; align-items: baseline;
+  /* 24px 是个折中：八艺那种单字排出来还很醒目，而自定义类型里
+     「转人工」这种 2~3 字的选项不会把标题区撑成一堵墙。 */
+  font-size: 24px; font-weight: 700; letter-spacing: 2px; line-height: 1.2;
+  margin-bottom: 5px;
+}
+.hero .glyphs span {
   background: linear-gradient(180deg, var(--text) 0%, var(--muted) 130%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
   transition: transform .22s ease;
 }
-.brand .glyphs span:hover { transform: translateY(-3px); }
-.brand .ver { font-size: 11px; color: var(--muted-2); font-variant-numeric: tabular-nums; }
-.topbar .spacer { flex: 1 1 auto; }
+.hero .glyphs span:hover { transform: translateY(-3px); }
+.tagline { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.75; }
+.tagline b { color: var(--text-dim); font-weight: 600; }
+.tagline .hero-profile { margin-left: 6px; white-space: nowrap; }
+.tagline .hero-profile b { color: var(--accent); }
 
 .pill {
   display: inline-flex; align-items: center; gap: 6px;

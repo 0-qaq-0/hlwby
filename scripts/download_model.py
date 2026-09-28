@@ -17,7 +17,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from jev_meme.engine import DEFAULT_MODEL_DIR, MODEL_CHOICES  # noqa: E402
+from biaochi.engine import DEFAULT_MODEL_DIR, MODEL_CHOICES  # noqa: E402
 
 ALLOW_PATTERNS = ["*.json", "*.safetensors", "*.txt", "*.model"]
 

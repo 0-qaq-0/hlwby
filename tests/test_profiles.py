@@ -20,8 +20,8 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from jev_meme.labels import CRITERION, EXAMPLES, MEME_LABELS  # noqa: E402
-from jev_meme.profiles import (  # noqa: E402
+from biaochi.labels import CRITERION, EXAMPLES, MEME_LABELS  # noqa: E402
+from biaochi.profiles import (  # noqa: E402
     DEFAULT_PROFILE_ID,
     MAX_LABELS,
     Profile,

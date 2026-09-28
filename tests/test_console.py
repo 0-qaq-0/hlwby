@@ -25,7 +25,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from jev_meme.console import enable_utf8  # noqa: E402
+from biaochi.console import enable_utf8  # noqa: E402
 
 
 class TestEnableUtf8(unittest.TestCase):
@@ -52,8 +52,8 @@ class TestScriptsUnderNonUtf8Stdout(unittest.TestCase):
         )
 
     def test_build_release_prints_chinese_under_cp1252(self):
-        """构建脚本刻意不 import jev_meme，所以它得自己修 stdout。"""
-        with tempfile.TemporaryDirectory(prefix="hlwby-encoding-") as tmp:
+        """构建脚本刻意不 import biaochi，所以它得自己修 stdout。"""
+        with tempfile.TemporaryDirectory(prefix="biaochi-encoding-") as tmp:
             result = self.run_script(
                 [str(PROJECT_ROOT / "scripts" / "build_release.py"), "--out", tmp, "--platform", "win64"],
                 cwd=PROJECT_ROOT,
@@ -64,7 +64,7 @@ class TestScriptsUnderNonUtf8Stdout(unittest.TestCase):
             self.assertNotIn("UnicodeEncodeError", stderr)
 
     def test_package_entry_points_do_not_crash(self):
-        """import 了 jev_meme 的脚本靠包里的 import 钩子自动修好。"""
+        """import 了 biaochi 的脚本靠包里的 import 钩子自动修好。"""
         for script, args in [
             ("scripts/profiles_check.py", []),
             ("scripts/page_check.py", []),
@@ -78,7 +78,7 @@ class TestScriptsUnderNonUtf8Stdout(unittest.TestCase):
                 self.assertIn(result.returncode, (0, 1), f"{script} 异常退出：{stderr}")
 
     def test_server_help_works(self):
-        result = self.run_script(["-m", "jev_meme.server", "--help"], cwd=PROJECT_ROOT)
+        result = self.run_script(["-m", "biaochi.server", "--help"], cwd=PROJECT_ROOT)
         self.assertEqual(result.returncode, 0, result.stderr.decode("utf-8", "replace"))
 
 

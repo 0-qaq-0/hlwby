@@ -1,4 +1,4 @@
-# 八艺 · 启动说明（拿到 release 包先看这个）
+# 标尺 · 启动说明（拿到 release 包先看这个）
 
 把一条中文评论粘进来，它告诉你该回「典 / 孝 / 急 / 乐 / 蚌 / 批 / 赢 / 麻」里的哪个字。
 模型不生成文字，只做一次前向传播读出概率，所以小模型也能做到百毫秒级。
@@ -18,8 +18,8 @@
 **Linux / macOS**
 
 ```bash
-unzip hlwby-4.0.0-linux.zip
-cd hlwby-4.0.0
+unzip biaochi-4.1.0-linux.zip
+cd biaochi-4.1.0
 ./start.sh            # 没有可执行位就：bash start.sh
 ```
 
@@ -116,8 +116,8 @@ Linux/macOS 是 `./start.sh --hf-mirror`。
 
 能跑，走 CPU。判一条从零点几秒变成几秒，功能完全一样。
 
-macOS 上注意：torch 的 MPS 加速**八艺用不上** —— 引擎的设备选择只认 `cuda` 和 `cpu`
-（`jev_meme/engine.py` 的 `pick_device`），所以在 Mac 上就是 CPU 跑。
+macOS 上注意：torch 的 MPS 加速**标尺用不上** —— 引擎的设备选择只认 `cuda` 和 `cpu`
+（`biaochi/engine.py` 的 `pick_device`），所以在 Mac 上就是 CPU 跑。
 
 ### 显存不够（CUDA out of memory）
 
@@ -155,7 +155,7 @@ macOS 上注意：torch 的 MPS 加速**八艺用不上** —— 引擎的设备
 
 ### 怎么彻底卸载
 
-删掉整个目录就行 —— 八艺不在系统里装任何东西（不写注册表、不装全局包）。
+删掉整个目录就行 —— 标尺不在系统里装任何东西（不写注册表、不装全局包）。
 唯一在系统里的东西是 Python 本身。
 
 ---
@@ -163,7 +163,7 @@ macOS 上注意：torch 的 MPS 加速**八艺用不上** —— 引擎的设备
 ## 四、包里有什么
 
 ```
-hlwby-4.0.0/
+biaochi-4.1.0/
 ├── 一键启动.bat          Windows 双击入口
 ├── start.sh              Linux / macOS 入口
 ├── run.ps1               给已经配好环境的人用的极简启动脚本
@@ -172,7 +172,7 @@ hlwby-4.0.0/
 ├── VERSION               版本号（纯文本）
 ├── release-manifest.json 文件清单 + sha256，用来校验下载完整性
 ├── requirements.txt      运行时依赖
-├── jev_meme/             判定引擎 + HTTP 服务 + 内置判断类型
+├── biaochi/             判定引擎 + HTTP 服务 + 内置判断类型
 ├── web/                  页面（纯静态，无构建步骤）
 ├── scripts/              下载模型 / 评测 / 各种检查脚本
 ├── tests/                测试（不需要显卡，不联网）

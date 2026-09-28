@@ -1,4 +1,4 @@
-"""把 SemIf（开源版 Jev）的判定引擎接到「八艺」这八个字上。
+"""把 SemIf 的判定引擎接到「判断类型」上（默认那套是「八艺」的八个字）。
 
 引擎本身来自 ``vendor/SemIf-OpenJev``（MIT），这里**不修改上游代码**，
 只是：
@@ -6,7 +6,7 @@
 1. 用中文重写 system prompt（上游是英文），结构完全一致；
 2. 复用上游的判定机制 —— 每个选项绑定一个单 token 的大写字母槽位，
    一次 forward 只取最后一个位置的 logits，再对这几个槽位做 softmax；
-3. 把结果映射回八个字。
+3. 把结果映射回这套类型的选项。
 
 核心事实：**模型不生成任何文字**。它只在一次前向传播里，把「下一个 token
 是 A / B / C …」的概率读出来。所以小模型也能做到百毫秒级响应。
@@ -147,8 +147,8 @@ def _messages(evidence: str, criterion: str, options: list[dict[str, str]]) -> l
     ]
 
 
-class MemeJev:
-    """常驻内存的八艺判定器：加载一次，之后每次判定只要一次 forward。"""
+class Biaochi:
+    """常驻内存的判定器：加载一次，之后每次判定只要一次 forward。"""
 
     def __init__(
         self,
@@ -415,7 +415,7 @@ class MemeJev:
 
 
 __all__ = [
-    "MemeJev",
+    "Biaochi",
     "LABELS_BY_ID",
     "MEME_LABELS",
     "DEFAULT_MODEL_DIR",

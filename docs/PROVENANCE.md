@@ -70,7 +70,7 @@ git -C vendor\SemIf-OpenJev rev-parse HEAD  # 应等于上面那个 commit
 
 ### 本项目在哪几个地方包了它
 
-上游代码不动，本项目在**外面**包了四层（都在 `jev_meme/engine.py`）：
+上游代码不动，本项目在**外面**包了四层（都在 `biaochi/engine.py`）：
 
 1. 中文 system prompt（上游是英文，payload 结构完全一致）；
 2. 把选项槽位的概率映射回八个汉字；
@@ -89,16 +89,16 @@ git -C vendor\SemIf-OpenJev rev-parse HEAD  # 应等于上面那个 commit
 | 体积 | 4.26 GB（本地实测） |
 | 位置 | `models/Qwen3.5-2B/`，**不入库**（用 `scripts/download_model.py` 拉） |
 
-权重不随本项目分发，只记录 revision。`jev_meme/engine.py` 的 `MODEL_CHOICES`
+权重不随本项目分发，只记录 revision。`biaochi/engine.py` 的 `MODEL_CHOICES`
 里还有 `qwen3-0.6b` 和 `qwen3.5-4b` 两个备选，各自带 revision。
 
 ---
 
 ## 4. 本项目的原创部分
 
-* `jev_meme/labels.py` —— 八个字的锚点描述（**这套系统的全部「训练」**，纯运行时数据）
-* `jev_meme/engine.py` 里的四层包装（见上）
-* `jev_meme/server.py` —— 标准库 HTTP 服务
+* `biaochi/labels.py` —— 八个字的锚点描述（**这套系统的全部「训练」**，纯运行时数据）
+* `biaochi/engine.py` 里的四层包装（见上）
+* `biaochi/server.py` —— 标准库 HTTP 服务
 * `web/index.html` —— 判定页面
 * `data/*.jsonl` —— 测试集（自己标的，见 `docs/EVAL.md` 第 10 节的局限说明）
 * `scripts/*` —— 评测、泄漏检查、偏置诊断、实验脚本

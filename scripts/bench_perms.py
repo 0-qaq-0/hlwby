@@ -12,13 +12,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from jev_meme import CRITERION, MEME_LABELS, MemeJev  # noqa: E402
-from jev_meme.engine import permutations_of  # noqa: E402
+from biaochi import CRITERION, MEME_LABELS, Biaochi  # noqa: E402
+from biaochi.engine import permutations_of  # noqa: E402
 
 TEXT = "我爸说他要戒烟，然后把烟藏在了冰箱里，说这样就想不起来抽了。第二天他在冰箱前面站了半小时。"
 EXPECT = "乐"
 
-engine = MemeJev()
+engine = Biaochi()
 engine.load()
 print(f"设备 {engine.metadata['device']} / {engine.metadata['dtype']}\n")
 

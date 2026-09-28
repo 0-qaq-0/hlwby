@@ -4,7 +4,7 @@
 词表（它还在，因为八艺是唯一评测过的那套）；这个脚本认所有类型，包括用户在
 页面上新建的 —— 自定义类型多了以后，命令行里得有一个「一次全查一遍」的入口。
 
-校验规则本身在 `jev_meme/profiles.py` 的 `validate()` 里，页面上的编辑器调的是
+校验规则本身在 `biaochi/profiles.py` 的 `validate()` 里，页面上的编辑器调的是
 同一份实现。这个脚本不重复实现规则，只负责**批量跑 + 排版**。
 
 用法：
@@ -21,7 +21,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from jev_meme.profiles import (  # noqa: E402
+from biaochi.profiles import (  # noqa: E402
     ProfileStore,
     errors_of,
     profile_stats,

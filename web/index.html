@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>八艺 · 这条评论该回哪个字</title>
+<title>标尺 · 这条评论该回哪个字</title>
 <meta name="description" content="把别人的一条评论粘进来，看看该用哪个字回他。判定类型可自定义，判定逻辑是运行时的数据，不用重训。">
 <link rel="stylesheet" href="/style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>典</text></svg>">
@@ -13,13 +13,26 @@
 
   <header class="topbar">
     <div class="brand">
-      <div class="glyphs" id="glyphs"></div>
+      <span class="wordmark">标尺</span>
       <span class="ver" id="version"></span>
     </div>
     <div class="spacer"></div>
     <span class="pill" id="health-pill"><span class="dot"></span><span id="health-text">连接中…</span></span>
     <button class="btn sm" id="theme-btn" title="切换深浅色">深/浅</button>
   </header>
+
+  <!--
+    品牌区：左边那串字是**当前判断类型的选项**（跟着上面选中的类型变），
+    不是写死的八个字 —— 这个工具本身是通用的，八艺只是默认那套。
+  -->
+  <div class="hero">
+    <div class="glyphs" id="glyphs"></div>
+    <p class="tagline">
+      给一段文本，从<b>你定义</b>的一组选项里挑一个。<b>判定标准是运行时的数据</b> ——
+      页面上就能改，不用重训，也不用重启服务。
+      <span class="hero-profile">当前类型：<b id="hero-profile">—</b></span>
+    </p>
+  </div>
 
   <!--
     判定类型的选择器放在最上面，因为它同时影响「判定」和「评测」两页 ——

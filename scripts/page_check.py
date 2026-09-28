@@ -23,8 +23,8 @@ WEB = ROOT / "web"
 def _enable_utf8() -> None:
     """把 stdout / stderr 切到 UTF-8。
 
-    和 `jev_meme/console.py` 里的 `enable_utf8` 是同一件事，**故意各写一份**：
-    那个在 `jev_meme` 包里，import 它就会连带拉起 engine -> torch（几秒 + 几 GB 内存），
+    和 `biaochi/console.py` 里的 `enable_utf8` 是同一件事，**故意各写一份**：
+    那个在 `biaochi` 包里，import 它就会连带拉起 engine -> torch（几秒 + 几 GB 内存），
     而这个检查脚本的用处恰恰是「别的东西坏了的时候还能跑」。
     所以这几个不依赖 torch 的独立脚本（page_check / docs_check / build_release）
     各自内联这 6 行，谁也别去「优化」成 import。
