@@ -57,6 +57,7 @@ from .labels import (
     LABELS_BY_ID,
     MEME_LABELS,
 )
+from .profiles import Profile
 
 #: 与上游 ``core.DIRECT_SYSTEM`` 一一对应的中文版。
 DIRECT_SYSTEM_ZH = (
@@ -331,7 +332,9 @@ class MemeJev:
         免得延迟随长度线性膨胀。实际用了几个排列看返回值里的 ``permutations``。
         """
         if criterion is None:
-            criterion = default_profile().criterion
+            # 原来这里写的是 `default_profile().criterion` —— 那个名字从来没定义过，
+            # 只是所有调用点都显式传了 criterion 才没炸。默认值就是「八艺」的问法。
+            criterion = CRITERION
         option_sets = permutations_of(labels, permutations)
         with self._lock:
             self.load()
@@ -394,9 +397,21 @@ class MemeJev:
         self,
         text: str,
         permutations: int = DEFAULT_PERMUTATIONS,
+        profile: Profile | None = None,
     ) -> dict[str, Any]:
-        """判定：这段文本该用八艺里的哪个词回。"""
-        return self.choose(text, MEME_LABELS, CRITERION, permutations)
+        """判定：这段文本该用哪个选项回。
+
+        ``profile`` 为 ``None`` 时用内置的「八艺」；传一个 ``Profile`` 就是任意
+        一套自定义判断类型 —— 换类型不需要动模型，锚点本来就是运行时读进去的。
+        """
+        if profile is None:
+            return self.choose(text, MEME_LABELS, CRITERION, permutations)
+
+        result = self.choose(text, profile.labels, profile.criterion, permutations)
+        result["profile"] = profile.id
+        result["profile_name"] = profile.name
+        result["profile_version"] = profile.version
+        return result
 
 
 __all__ = [

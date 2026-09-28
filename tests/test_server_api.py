@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import sys
+import tempfile
 import threading
 import unittest
 import urllib.error
@@ -18,6 +19,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from jev_meme.profiles import ProfileStore  # noqa: E402
 from jev_meme.server import Handler, MAX_BODY_BYTES, MAX_TEXT_CHARS  # noqa: E402
 
 
@@ -28,19 +30,20 @@ class FakeEngine:
         self.loaded = True
         self.load_seconds = 0.0
         self.metadata = {"device": "cpu", "dtype": "float32", "source": "/fake/model"}
-        self.calls: list[tuple[str, int]] = []
+        self.calls: list[tuple[str, int, str | None]] = []
 
-    def decide(self, text: str, permutations: int = 5) -> dict:
+    def decide(self, text: str, permutations: int = 5, profile=None) -> dict:
         if text == "炸":
             raise ValueError("待判定的文本不能为空")
         if text == "崩":
             raise RuntimeError("模拟的意外错误")
-        self.calls.append((text, permutations))
+        self.calls.append((text, permutations, getattr(profile, "id", None)))
+        label = profile.labels[0]["id"] if profile is not None else "典"
         return {
-            "winner": "典",
+            "winner": label,
             "confidence": 0.9,
             "margin": 0.8,
-            "ranking": [{"id": "典", "probability": 0.9, "logit": 1.0}],
+            "ranking": [{"id": label, "probability": 0.9, "logit": 1.0}],
             "input_tokens": 1000,
             "permutations": permutations,
             "permutations_requested": permutations,
@@ -56,6 +59,10 @@ class ServerCase(unittest.TestCase):
         # 测试时把访问日志关掉，否则每个断言都夹一行 stderr，看不出失败在哪。
         Handler.log_message = lambda self, fmt, *args: None  # type: ignore[method-assign]
         Handler.engine = FakeEngine()
+        # 用户类型写到临时目录 —— 测试绝不能碰仓库里的 data/profiles。
+        cls._tmp = tempfile.TemporaryDirectory()
+        cls.profile_dir = Path(cls._tmp.name)
+        Handler.store = ProfileStore(user_dir=cls.profile_dir)
         cls.httpd = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
         cls.httpd.daemon_threads = True
         cls.port = cls.httpd.server_address[1]
@@ -66,6 +73,7 @@ class ServerCase(unittest.TestCase):
     def tearDownClass(cls) -> None:
         cls.httpd.shutdown()
         cls.httpd.server_close()
+        cls._tmp.cleanup()
 
     # ------------------------------------------------------------ 工具
 
@@ -93,6 +101,10 @@ class ServerCase(unittest.TestCase):
                 return response.status, json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as error:
             return error.code, json.loads(error.read().decode("utf-8"))
+
+    def get_raw(self, path: str):
+        with urllib.request.urlopen(self.url(path), timeout=10) as response:
+            return response.status, response.headers, response.read()
 
 
 class TestEvalEndpoint(ServerCase):
@@ -188,9 +200,11 @@ class TestDecideValidation(ServerCase):
                 status, _ = self.post("/api/decide", {"text": "x", "permutations": value})
                 self.assertEqual(status, 400)
 
-    def test_profile_only_bayi(self):
-        status, _ = self.post("/api/decide", {"text": "x", "profile": "classic"})
+    def test_unknown_profile_rejected(self):
+        """从前这里只认 `bayi`；现在类型可自定义，认的是「存不存在」。"""
+        status, body = self.post("/api/decide", {"text": "x", "profile": "classic"})
         self.assertEqual(status, 400)
+        self.assertIn("判断类型", body["error"])
 
     def test_bad_json(self):
         status, body = self.post("/api/decide", None, raw=b"{not json")
@@ -219,6 +233,221 @@ class TestDecideValidation(ServerCase):
     def test_wrong_method_on_decide(self):
         status, _ = self.get("/api/decide")
         self.assertEqual(status, 404)
+
+
+def sample_profile(profile_id: str = "demo") -> dict:
+    """一份合法的最小自定义类型 —— 页面上「新建」出来的就长这样。"""
+    return {
+        "id": profile_id,
+        "name": "演示类型",
+        "summary": "测试用",
+        "criterion": "下面这句话最符合哪一类？",
+        "version": "v1",
+        "labels": [
+            {
+                "id": "甲",
+                "description": "这段话在举例。例：「比如昨天那件事」「举个例子」。",
+                "hint": "举例",
+            },
+            {
+                "id": "乙",
+                "description": "这段话在下结论。例：「所以就是这样」「结论很清楚」。",
+                "hint": "下结论",
+            },
+        ],
+        "examples": [{"label": "甲", "text": "比如上次那个情况。"}],
+    }
+
+
+class TestProfilesEndpoint(ServerCase):
+    """判断类型的增删改查 —— 页面的词表编辑器打的就是这几个接口。"""
+
+    def test_list_includes_builtin(self):
+        status, body = self.get("/api/profiles")
+        self.assertEqual(status, 200)
+        ids = [item["id"] for item in body["profiles"]]
+        self.assertIn("bayi", ids)
+        self.assertIn("support-router", ids)
+        self.assertEqual(body["default"], "bayi")
+
+    def test_get_bayi_has_eight_labels(self):
+        status, body = self.get("/api/profiles/bayi")
+        self.assertEqual(status, 200)
+        self.assertEqual(len(body["profile"]["labels"]), 8)
+        self.assertTrue(body["profile"]["builtin"])
+        self.assertIn("stats", body)
+        self.assertIsInstance(body["issues"], list)
+
+    def test_get_missing_profile_404(self):
+        status, body = self.get("/api/profiles/nope")
+        self.assertEqual(status, 404)
+        self.assertFalse(body["ok"])
+
+    def test_export_sets_attachment_filename(self):
+        status, headers, raw = self.get_raw("/api/profiles/bayi/export")
+        self.assertEqual(status, 200)
+        self.assertIn("attachment", headers["Content-Disposition"])
+        self.assertIn("bayi.json", headers["Content-Disposition"])
+        self.assertEqual(json.loads(raw.decode("utf-8"))["id"], "bayi")
+
+    def test_validate_reports_errors_without_saving(self):
+        bad = sample_profile("bad-demo")
+        bad["labels"] = [bad["labels"][0]]  # 只剩一个选项
+        status, body = self.post("/api/profiles/validate", {"profile": bad})
+        self.assertEqual(status, 200)
+        self.assertGreater(body["error_count"], 0)
+        self.assertEqual(self.get("/api/profiles/bad-demo")[0], 404)
+
+    def test_save_then_get_then_delete(self):
+        profile = sample_profile("demo-roundtrip")
+        status, body = self.post("/api/profiles", {"profile": profile})
+        self.assertEqual(status, 200, body)
+        self.assertEqual(body["summary"]["id"], "demo-roundtrip")
+        self.assertTrue(self.profile_dir.joinpath("demo-roundtrip.json").is_file())
+
+        status, body = self.get("/api/profiles/demo-roundtrip")
+        self.assertEqual(status, 200)
+        self.assertEqual([x["id"] for x in body["profile"]["labels"]], ["甲", "乙"])
+
+        status, body = self.post("/api/profiles/delete", {"id": "demo-roundtrip"})
+        self.assertEqual(status, 200)
+        self.assertEqual(self.get("/api/profiles/demo-roundtrip")[0], 404)
+
+    def test_save_refuses_overwrite_without_flag(self):
+        profile = sample_profile("demo-overwrite")
+        self.assertEqual(self.post("/api/profiles", {"profile": profile})[0], 200)
+        profile["name"] = "改过名"
+        status, body = self.post("/api/profiles", {"profile": profile})
+        self.assertEqual(status, 400)
+        self.assertIn("覆盖", body["error"])
+        status, _ = self.post("/api/profiles", {"profile": profile, "overwrite": True})
+        self.assertEqual(status, 200)
+        self.assertEqual(self.get("/api/profiles/demo-overwrite")[1]["profile"]["name"], "改过名")
+        self.post("/api/profiles/delete", {"id": "demo-overwrite"})
+
+    def test_save_rejects_invalid_profile_with_issues(self):
+        profile = sample_profile("demo-invalid")
+        profile["criterion"] = ""
+        status, body = self.post("/api/profiles", {"profile": profile})
+        self.assertEqual(status, 400)
+        self.assertTrue(any(issue["field"] == "criterion" for issue in body["issues"]))
+
+    def test_cannot_delete_builtin(self):
+        status, body = self.post("/api/profiles/delete", {"id": "bayi"})
+        self.assertEqual(status, 400)
+        self.assertIn("内置", body["error"])
+
+    def test_delete_missing_404(self):
+        self.assertEqual(self.post("/api/profiles/delete", {"id": "nope"})[0], 404)
+
+    def test_import_roundtrip(self):
+        exported = self.get_raw("/api/profiles/support-router/export")[2].decode("utf-8")
+        raw = json.loads(exported)
+        raw["id"] = "support-router-copy"
+        status, body = self.post("/api/profiles/import", {"profile": raw})
+        self.assertEqual(status, 200, body)
+        self.assertEqual(body["summary"]["label_count"], 5)
+        self.post("/api/profiles/delete", {"id": "support-router-copy"})
+
+    def test_import_without_id_400(self):
+        status, body = self.post("/api/profiles/import", {"profile": {"name": "没 id"}})
+        self.assertEqual(status, 400)
+
+
+class TestDecideWithProfiles(ServerCase):
+    def test_decide_uses_named_profile(self):
+        engine = Handler.engine
+        engine.calls.clear()
+        status, body = self.post(
+            "/api/decide", {"text": "我的快递到哪了", "profile": "support-router"}
+        )
+        self.assertEqual(status, 200, body)
+        self.assertEqual(body["profile"], "support-router")
+        self.assertEqual(engine.calls[-1][2], "support-router")
+        # 判定结果用的是这套类型自己的第一个选项，不是「八艺」的「典」。
+        self.assertEqual(body["winner"], "退款")
+
+    def test_decide_defaults_to_bayi(self):
+        engine = Handler.engine
+        engine.calls.clear()
+        status, body = self.post("/api/decide", {"text": "随便一句话"})
+        self.assertEqual(status, 200)
+        self.assertEqual(body["profile"], "bayi")
+        self.assertEqual(engine.calls[-1][2], "bayi")
+
+    def test_decide_with_inline_labels(self):
+        """编辑器里改了还没保存的词表也要能试判 —— 不然「改了立刻看效果」做不到。"""
+        engine = Handler.engine
+        engine.calls.clear()
+        status, body = self.post(
+            "/api/decide",
+            {
+                "text": "试一句",
+                "inline": {
+                    "criterion": "选一个",
+                    "labels": [
+                        {"id": "甲", "description": "例：「甲」"},
+                        {"id": "乙", "description": "例：「乙」"},
+                    ],
+                },
+            },
+        )
+        self.assertEqual(status, 200, body)
+        self.assertEqual(body["winner"], "甲")
+        self.assertEqual(engine.calls[-1][2], "inline")
+
+    def test_inline_requires_two_labels(self):
+        status, body = self.post(
+            "/api/decide",
+            {"text": "x", "inline": {"criterion": "选一个", "labels": [{"id": "甲", "description": "d"}]}},
+        )
+        self.assertEqual(status, 400)
+        self.assertIn("2~16", body["error"])
+
+    def test_inline_requires_criterion(self):
+        status, _ = self.post(
+            "/api/decide",
+            {
+                "text": "x",
+                "inline": {
+                    "criterion": "",
+                    "labels": [{"id": "甲", "description": "d"}, {"id": "乙", "description": "d"}],
+                },
+            },
+        )
+        self.assertEqual(status, 400)
+
+    def test_inline_rejects_duplicate_ids(self):
+        status, body = self.post(
+            "/api/decide",
+            {
+                "text": "x",
+                "inline": {
+                    "criterion": "选一个",
+                    "labels": [{"id": "甲", "description": "d"}, {"id": "甲", "description": "d"}],
+                },
+            },
+        )
+        self.assertEqual(status, 400)
+        self.assertIn("重复", body["error"])
+
+    def test_eval_endpoint_is_profile_aware(self):
+        status, body = self.get("/api/eval?profile=support-router")
+        self.assertEqual(status, 200)
+        self.assertEqual(body["profile"], "support-router")
+        self.assertFalse(body["available"])
+        self.assertIn("how", body)
+
+    def test_eval_rejects_path_traversal(self):
+        """`profile` 会拼进文件名，所以必须在路由层挡掉。
+
+        回归：`?profile=../eval_result` 曾经真的读出了 `data/eval_result.json`。
+        """
+        for bad in ("../eval_result", "..%2Feval_result", "a/b", "Bayi"):
+            with self.subTest(bad=bad):
+                status, body = self.get(f"/api/eval?profile={bad}")
+                self.assertEqual(status, 400)
+                self.assertFalse(body["ok"])
 
 
 if __name__ == "__main__":

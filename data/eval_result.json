@@ -1,4 +1,7 @@
 {
+  "profile": "bayi",
+  "profile_name": "八艺",
+  "profile_version": "meme-direct-zh-v4",
   "dataset": "data/eval_clean.jsonl",
   "permutations": 5,
   "total": 52,
@@ -8,6 +11,40 @@
     0.681,
     0.892
   ],
-  "median_ms": 520.9,
+  "median_ms": 525.9,
+  "per_label": {
+    "乐": {
+      "correct": 3,
+      "total": 6
+    },
+    "典": {
+      "correct": 6,
+      "total": 7
+    },
+    "孝": {
+      "correct": 6,
+      "total": 7
+    },
+    "急": {
+      "correct": 4,
+      "total": 6
+    },
+    "批": {
+      "correct": 6,
+      "total": 6
+    },
+    "蚌": {
+      "correct": 7,
+      "total": 7
+    },
+    "赢": {
+      "correct": 6,
+      "total": 6
+    },
+    "麻": {
+      "correct": 4,
+      "total": 7
+    }
+  },
   "note": "由 scripts/evaluate.py --write-result 生成；网页和文档从这里读头条数字"
 }

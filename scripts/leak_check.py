@@ -20,6 +20,9 @@
 分母取较短一侧的 n-gram 数量 —— 否则长描述天然占便宜，
 一句 20 字的测试句对上一段 120 字的锚点，重合率会被稀释成 0。
 
+算法本体在 `jev_meme/textcheck.py`（页面的词表编辑器用的是同一份实现，
+不然「检查通过」和「页面上没报警」会是两个不同的标准）。
+
 阈值（默认 8-gram）：
 
     >= 0.30   LEAK —— 这句话基本能在锚点里逐字找到，必须挪出干净集
@@ -34,7 +37,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -42,44 +44,17 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from jev_meme.labels import EXAMPLES, MEME_LABELS  # noqa: E402
+from jev_meme.textcheck import (  # noqa: E402
+    LEAK_THRESHOLD,
+    WARN_THRESHOLD,
+    overlap,
+    verdict,
+)
 
 DATA_DIR = PROJECT_ROOT / "data"
 
-#: 只留中英文数字，标点空白全部丢掉 —— 泄漏往往是「同一句话改了标点」。
-_KEEP = re.compile(r"[^\u4e00-\u9fffA-Za-z0-9]")
-
-LEAK_THRESHOLD = 0.30
-WARN_THRESHOLD = 0.15
-
-
-#: 比这个还短的窗口就没有区分度了（「嗯嗯受教了」这种 5 字句会整个命中）。
-MIN_WINDOW = 5
-
-
-def normalize(text: str) -> str:
-    return _KEEP.sub("", text)
-
-
-def overlap(query: str, haystack: str, n: int) -> float:
-    """``query`` 里有多大比例的字面片段能在 ``haystack`` 里逐字找到。
-
-    方向是**单向**的：我们关心的是「这句测试句是不是抄了锚点」，
-    而不是「锚点是不是抄了测试句」。所以窗口大小取
-    ``min(n, len(query))`` —— 否则像「嗯嗯，受教了。」这种 5 字短句
-    永远凑不出 8-gram，会从检查里溜过去（这是本脚本第一版的 bug，
-    短句正是「麻」这个词的全部形态，漏掉等于没查）。
-    """
-    q = normalize(query)
-    if not q:
-        return 0.0
-    width = min(n, len(q))
-    if width < MIN_WINDOW:
-        # 句子太短，任何片段都不足以说明问题 —— 宁可放过，不要误报。
-        return 0.0
-    grams = {q[i : i + width] for i in range(len(q) - width + 1)}
-    hay = normalize(haystack)
-    hits = sum(1 for gram in grams if gram in hay)
-    return hits / len(grams)
+#: 度量本身住在 `jev_meme/textcheck.py` —— 页面上的词表编辑器也要用同一套
+#: （用户改锚点时得当场知道「这条示例是不是抄了锚点」）。这里只是它的命令行外壳。
 
 
 def worst_against(text: str, n: int) -> tuple[float, str]:
@@ -90,14 +65,6 @@ def worst_against(text: str, n: int) -> tuple[float, str]:
         if score > best:
             best, who = score, label["id"]
     return best, who
-
-
-def verdict(score: float) -> str:
-    if score >= LEAK_THRESHOLD:
-        return "LEAK"
-    if score >= WARN_THRESHOLD:
-        return "warn"
-    return "ok"
 
 
 def load_rows(path: Path) -> list[dict]:

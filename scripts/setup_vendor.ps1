@@ -1,4 +1,4 @@
-# 克隆上游判定引擎到 vendor/SemIf-OpenJev，并固定到本项目验证过的 commit。
+﻿# 克隆上游判定引擎到 vendor/SemIf-OpenJev，并固定到本项目验证过的 commit。
 #
 # 为什么不入库：上游代码原样使用、不修改，放在 git 里既膨胀仓库又模糊归属。
 # 用脚本按 commit 克隆，既能保证可复现，也能一眼核对用的哪个版本。

@@ -9,8 +9,21 @@ __pycache__/
 # 模型权重（用 scripts/download_model.py 重新拉取）
 models/
 
-# 工具生成的临时缓存（scripts/page_check.py 会往这里写）
+# 工具生成的临时缓存
 .cache/
+
+# release 包构建产物（scripts/build_release.py --out dist）
+dist/
+
+# 用户自定义的判断类型 **不进库**：
+#   那是「你的」类型，不是这个项目的；分享请用页面上的「导出 JSON」，
+#   或者把文件发给对方导入。目录本身保留（.gitkeep）。
+data/profiles/*.json
+!data/profiles/.gitkeep
+
+# 自定义类型的评测结果同理：数字只在生成它的那台机器上有意义
+data/eval_results/*.json
+!data/eval_results/.gitkeep
 
 # 环境与系统文件
 .env

@@ -1,9 +1,15 @@
-# 一键启动：建环境 -> 装依赖 -> 下模型 -> 起服务
+﻿# 一键启动：真正的实现在 scripts/launch.ps1
+#
+# 这里刻意只做参数转译，不再自己写一遍 —— release 包里的「一键启动.bat」调的
+# 也是同一个 launch.ps1。两份逻辑各自演化的话，就会出现「源码树里能跑、
+# 下载包里不行」这种最难查的问题（历史上这种坑本项目踩过一次：页面上的数字
+# 和 README 里的数字各说各话）。
 #
 # 用法：
 #   .\run.ps1                                   # 默认 Qwen3.5-2B
-#   .\run.ps1 --model qwen3-0.6b                # 换更小更快的基座
-#   .\run.ps1 --port 9000                       # 换端口
+#   .\run.ps1 -Model qwen3-0.6b                 # 换更小更快的基座
+#   .\run.ps1 -Port 9000 -Mirror                # 换端口 + pip 走清华源
+#   .\run.ps1 -Device cpu                       # 没显卡时
 param(
     [string]$Model = "qwen3.5-2b",
     [Parameter(ValueFromRemainingArguments = $true)]
@@ -11,33 +17,13 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$root = $PSScriptRoot
-$py = Join-Path $root ".venv\Scripts\python.exe"
+$launcher = Join-Path $PSScriptRoot "scripts\launch.ps1"
 
-if (-not (Test-Path $py)) {
-    Write-Host "[run] 创建虚拟环境..." -ForegroundColor Cyan
-    py -3.10 -m venv (Join-Path $root ".venv")
-    & $py -m pip install --upgrade pip
-    & $py -m pip install -r (Join-Path $root "requirements.txt")
-    Write-Host "[run] 安装 CUDA 版 torch（Blackwell 需要 cu128+）..." -ForegroundColor Cyan
-    & $py -m pip install --force-reinstall "torch==2.14.0+cu130" `
-        --index-url https://download.pytorch.org/whl/cu130
+if (-not (Test-Path $launcher)) {
+    Write-Host "[失败] 找不到 $launcher" -ForegroundColor Red
+    Write-Host "       如果是解压出来的包，确认 scripts\ 目录完整" -ForegroundColor Yellow
+    exit 1
 }
 
-# 目录名 = 模型名，例如 qwen3.5-2b -> Qwen3.5-2B
-$dirName = switch ($Model) {
-    "qwen3-0.6b" { "Qwen3-0.6B" }
-    "qwen3.5-2b" { "Qwen3.5-2B" }
-    "qwen3.5-4b" { "Qwen3.5-4B" }
-    default      { $Model }
-}
-$modelDir = Join-Path $root "models\$dirName"
-
-$weights = Get-ChildItem -Path $modelDir -Filter "*.safetensors" -ErrorAction SilentlyContinue
-if (-not $weights) {
-    Write-Host "[run] 下载基座模型 $dirName 到项目内..." -ForegroundColor Cyan
-    & $py (Join-Path $root "scripts\download_model.py") --model $Model
-}
-
-Write-Host "[run] 启动服务 http://127.0.0.1:8770/  (基座 $dirName)" -ForegroundColor Green
-& $py -m jev_meme.server --model $Model @Rest
+& $launcher -Model $Model @Rest
+exit $LASTEXITCODE

@@ -1,0 +1,190 @@
+# 打 tag 自动构建 release 包，并发布到 GitHub Release。
+#
+# 三个 job：
+#   build（windows-latest / ubuntu-latest 两个并行）—— 各自构建 zip 并上传 artifact
+#   release —— 把两个 zip 一起挂到一个 GitHub Release 上
+#
+# 为什么构建 job 不装 torch / transformers：build_release.py 是纯标准库脚本，
+# 打包不需要运行时依赖。装了反而每次要多花好几分钟下 2GB 的 wheel。
+#
+# 为什么只用 actions/* 官方 action + gh 命令行：第三方 action 要额外信任它的
+# 维护者，而这里要做的事（装 Python、传文件、发 release）官方件就够了。
+# gh 是 GitHub 托管 runner 上预装的，直接用。
+
+name: release
+
+on:
+  # 打 tag 触发（v4.0.0 这种）
+  push:
+    tags:
+      - "v*"
+  # 手动触发：Actions 页面点 "Run workflow"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "要发布的 tag（如 v4.0.0）。留空 = 当前 ref；从分支手动跑时会自动用 v<version.py 里的版本号>"
+        required: false
+        default: ""
+
+# 同一时间只允许一个 release 流程跑，避免两个 tag 撞车把附件传串。
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: 构建 ${{ matrix.platform }} 包
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # 一个平台失败也让另一个跑完 —— 不然看不到另一个平台的真实结果。
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: win64
+          - os: ubuntu-latest
+            platform: linux
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 装 Python 3.10（只装 Python，不装 torch）
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: 解析 tag
+        # 用 bash 而不是各平台的默认 shell：windows-latest 上默认是 pwsh，
+        # 两个平台写两套脚本只会多一处会腐烂的地方。Windows runner 自带 Git Bash。
+        shell: bash
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          tag="$INPUT_TAG"
+          if [ -z "$tag" ]; then
+            if [ "$REF_TYPE" = "tag" ]; then
+              tag="$REF_NAME"
+            else
+              # 手动从分支跑：拿 version.py 里的版本号拼一个 tag。
+              tag="v$(python scripts/build_release.py --print-version)"
+            fi
+          fi
+          echo "本次发布的 tag：$tag"
+          echo "TAG=$tag" >> "$GITHUB_ENV"
+
+      - name: 构建 release 包
+        shell: bash
+        # --expect-tag 会校验 tag 与 jev_meme/version.py 里的版本号一致，
+        # 不一致直接失败 —— 免得 Release 页面写着 v4.0.0、包里却是别的版本。
+        run: python scripts/build_release.py --out dist --platform "${{ matrix.platform }}" --expect-tag "$TAG"
+
+      - name: 打印包内容摘要（日志里能直接看到装了什么）
+        shell: bash
+        # manifest 在 zip 里面，直接读出来打印 —— 打包结果一目了然，
+        # 出问题时不用把 artifact 下回本地翻。
+        run: |
+          python - <<'PY'
+          import json, pathlib, zipfile
+          for path in sorted(pathlib.Path("dist").glob("*.zip")):
+              with zipfile.ZipFile(path) as archive:
+                  name = next(n for n in archive.namelist() if n.endswith("release-manifest.json"))
+                  manifest = json.loads(archive.read(name))
+              print(f"{path.name}: {manifest['file_count']} 个文件，"
+                    f"{manifest['total_bytes']} 字节，版本 {manifest['version']}，平台 {manifest['platform']}")
+          PY
+
+      - name: 上传 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          # 两个平台的 zip 文件名里已经带平台标签了，artifact 名再带一次便于排查。
+          name: release-${{ matrix.platform }}
+          path: dist/*.zip
+          if-no-files-found: error
+
+  release:
+    name: 发布 GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      # gh release create 需要写权限；其它 job 只读。
+      contents: write
+    steps:
+      - name: 检出代码（要读 docs/RELEASE_NOTES.md）
+        uses: actions/checkout@v4
+
+      - name: 装 Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: 解析 tag
+        # 跟 build job 里同一套逻辑。job 之间不共享环境变量，
+        # 与其搞 matrix 输出传递，不如把这十行再写一遍 —— 好读也好改。
+        shell: bash
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          tag="$INPUT_TAG"
+          if [ -z "$tag" ]; then
+            if [ "$REF_TYPE" = "tag" ]; then
+              tag="$REF_NAME"
+            else
+              tag="v$(python scripts/build_release.py --print-version)"
+            fi
+          fi
+          echo "本次发布的 tag：$tag"
+          echo "TAG=$tag" >> "$GITHUB_ENV"
+
+      - name: 取回两个平台的 zip
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          # 两个 artifact 合并到同一个目录，dist/ 下就是两个 zip。
+          merge-multiple: true
+
+      - name: 列出要发布的文件
+        shell: bash
+        run: ls -l dist
+
+      - name: 发布 release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 用 GITHUB_SHA 作为新建 tag 的目标：手动触发时 tag 可能还不存在。
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          # 有 docs/RELEASE_NOTES.md 就用它当发布说明（人工写的更准）；
+          # 没有就让 GitHub 按 commit 自动生成。
+          notes=(--generate-notes)
+          if [ -f docs/RELEASE_NOTES.md ]; then
+            notes=(--notes-file docs/RELEASE_NOTES.md)
+            echo "用 docs/RELEASE_NOTES.md 当发布说明"
+          else
+            echo "没有 docs/RELEASE_NOTES.md，用 --generate-notes 自动生成"
+          fi
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            # 重跑（或先建了 release 再补包）：只补传附件，别报错退出。
+            echo "release $TAG 已存在，改为补传附件"
+            gh release upload "$TAG" dist/*.zip --clobber
+          elif git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "tag $TAG 已存在，基于它建 release"
+            gh release create "$TAG" dist/*.zip --title "八艺 $TAG" "${notes[@]}"
+          else
+            echo "tag $TAG 还不存在，用 $SHA 新建"
+            gh release create "$TAG" dist/*.zip --title "八艺 $TAG" "${notes[@]}" --target "$SHA"
+          fi
+
+          echo "发布完成："
+          gh release view "$TAG" --json url,assets --jq '.url, (.assets[] | "  \(.name)  \(.size) 字节")'
