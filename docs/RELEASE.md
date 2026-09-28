@@ -216,6 +216,18 @@ Release 页面写着 v4.0.1、包里却是 4.2.0 的代码，是那种发出去�
 发布说明：仓库里有 `docs/RELEASE_NOTES.md` 就用它（人工写的更准），
 没有就让 GitHub 用 `--generate-notes` 按 commit 自动生成。
 
+> **`docs/RELEASE_NOTES.md` 是直接贴到 GitHub Release 正文里的**，所以它面向的是
+> **用户**，不是维护者：写「怎么下载、怎么用、这次改了什么」，别写维护者才关心的话
+> （「这份文件是工作流的来源」这类说明写在本文件里就够了）。
+>
+> 已经发出去的 release，正文可以在网页上改，也可以：
+>
+> ```powershell
+> gh release edit v4.2.0 --notes-file docs/RELEASE_NOTES.md
+> ```
+>
+> 注意改文件**不会**自动更新已发布的 release —— 那是一个快照。
+
 ### 手动触发 / 补发布
 
 Actions 页面点 `release` → `Run workflow`，`tag` 留空就是「用当前 ref」；

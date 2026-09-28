@@ -2,9 +2,6 @@
 
 给它一段文本、再给它一组**你自己定的选项**，它帮你挑一个。这个包解压就能用。
 
-> 这份文件是 `.github/workflows/release.yml` 的发布说明来源（会作为 GitHub Release 的正文）。
-> 下次发版请改它；不想手写就把文件删掉，Actions 会退回 `--generate-notes` 自动生成。
-
 ---
 
 ## 快速开始
