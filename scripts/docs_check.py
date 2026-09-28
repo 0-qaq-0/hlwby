@@ -133,13 +133,19 @@ print("\n项目结构:")
 
 
 def structure_block(text: str) -> str:
-    match = re.search(r"## 八、项目结构\s*\n+```\n(.*?)```", text, re.S)
+    """把「项目结构」那一节的代码块抠出来。
+
+    按**标题里的「项目结构」四个字**找，不按章节编号找 —— 以前写死 `## 八、`，
+    结果重排章节顺序（或插一节）就会让这个检查自己误报。文档的章节号会变，
+    但「项目结构」这个名字不会。
+    """
+    match = re.search(r"^##+[^\n]*项目结构[^\n]*\n+```\n(.*?)```", text, re.S | re.M)
     return match.group(1) if match else ""
 
 
 block = structure_block(readme)
 if not block:
-    problems.append("README 里找不到「八、项目结构」的代码块（这个检查要靠它）")
+    problems.append("README 里找不到「项目结构」那一节的代码块（这个检查要靠它）")
     print("  找不到结构块")
 else:
     checked = 0
