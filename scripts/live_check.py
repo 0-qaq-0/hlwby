@@ -40,7 +40,7 @@ print(
 
 sets = [
     ("页面示例（8 条，挑的典型样本）", EXAMPLES),
-    ("干净测试集（24 条，内容与锚点不重合）", load(ROOT / "data" / "eval_clean.jsonl")),
+    ("干净测试集（`leak_check.py` 验证过与锚点不重合）", load(ROOT / "data" / "eval_clean.jsonl")),
 ]
 
 for title, rows in sets:

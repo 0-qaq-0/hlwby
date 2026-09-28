@@ -218,6 +218,24 @@ curl -X POST http://127.0.0.1:8770/api/decide `
 
 `GET /api/labels` 会返回完整词表定义（每个字的锚点描述和页面示例）。
 
+`GET /api/eval` 返回干净集的头条数字（网页副标题就是从这里读的）：
+
+```json
+{
+  "ok": true,
+  "available": true,
+  "dataset": "data/eval_clean.jsonl",
+  "permutations": 5,
+  "total": 52,
+  "correct": 42,
+  "accuracy": 0.8077,
+  "ci95": [0.681, 0.892],
+  "median_ms": 521.0
+}
+```
+
+`available: false` 表示还没跑过 `scripts/evaluate.py --write-result`。
+
 ---
 
 ## 五、项目结构
@@ -235,7 +253,8 @@ curl -X POST http://127.0.0.1:8770/api/decide `
 ├── tests/                      # ★ 58 个单元测试，只用标准库 unittest
 ├── data/
 │   ├── eval_clean.jsonl        # ★ 干净测试集（52 条），以它为准
-│   └── eval_overlap.jsonl      # 对照集：页面示例变体 + 已知泄漏样本
+│   ├── eval_overlap.jsonl      # 对照集：页面示例变体 + 已知泄漏样本
+│   └── eval_result.json        # ★ 头条数字的唯一出处，网页从 /api/eval 读它
 ├── docs/
 │   ├── EVAL.md                 # ★ 实测数字，含位置偏置和两次翻车
 │   ├── PROVENANCE.md           # ★ 来源与归属：哪些是别人的，哪些是自己的
@@ -246,13 +265,13 @@ curl -X POST http://127.0.0.1:8770/api/decide `
 │   ├── leak_check.py           # ★ 测试集 / 页面示例 与锚点的泄漏检查
 │   ├── anchor_tune.py          # ★ 锚点消融：找出把判定吸走的那个词
 │   ├── smoke_test.py           # 冒烟测试 / 延迟测量
-│   ├── evaluate.py             # ★ 主评测（干净集 + 对照集，含 Wilson CI）
+│   ├── evaluate.py             # ★ 主评测（含 Wilson CI，--write-result 落盘头条数字）
 │   ├── experiment.py           # 锚点写法 / 问法对比
 │   ├── order_bias.py           # 位置偏置诊断
 │   ├── bench_perms.py          # 批量 vs 串行、可复现性
 │   ├── live_check.py           # 对着跑起来的服务实测
 │   ├── labels_check.py         # 词汇表一致性检查
-│   ├── page_check.py           # 页面静态检查
+│   ├── page_check.py           # ★ 页面静态检查（含「不许硬编码头条数字」）
 │   └── api_check.py            # API 校验与错误路径测试
 ├── LICENSE                     # MIT
 └── run.ps1
@@ -318,13 +337,31 @@ curl -X POST http://127.0.0.1:8770/api/decide `
 
 **当前 README 和片子里的数字，是修完这三层之后重测的：52 条，80.8%。**
 
-三道防线现在都在仓库里，改完就能跑：
+### 三道防线现在都在仓库里，改完就能跑：
 
 ```powershell
+& $py -m unittest discover -s tests -t .   # 70 个单元测试
 & $py scripts\leak_check.py                 # 测试集有没有抄锚点
+& $py scripts\page_check.py                 # 页面有没有硬编码过期数字
 & $py scripts\anchor_tune.py                # 描述是不是太泛
-& $py -m unittest discover -s tests -t .    # 上面两条的回归测试
 ```
+
+### 顺带修掉的：网页上挂着一个作废的数字
+
+`web/index.html` 的副标题原来硬编码着「干净测试集 **24 条**实测 **96%**」——
+测试集换成 52 条之后没人记得改，那个数字就在首页挂了很久。
+
+现在头条数字只有一个出处：
+
+```
+scripts/evaluate.py --write-result
+        └─ data/eval_result.json
+              └─ GET /api/eval
+                    └─ web/index.html 的 <b id="eval-accuracy">
+```
+
+`page_check.py` 里有一条正则专门禁止把数字写回 HTML
+（检查前会先剥掉注释 —— 注释里引用旧数字是为了说明「为什么要改」，那是文档不是主张）。
 
 ---
 

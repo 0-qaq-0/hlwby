@@ -95,6 +95,28 @@ class ServerCase(unittest.TestCase):
             return error.code, json.loads(error.read().decode("utf-8"))
 
 
+class TestEvalEndpoint(ServerCase):
+    """`/api/eval` 是网页头条数字的唯一出处。"""
+
+    def test_returns_available_flag(self):
+        status, body = self.get("/api/eval")
+        self.assertEqual(status, 200)
+        self.assertTrue(body["ok"])
+        self.assertIn("available", body)
+
+    def test_payload_is_consistent_when_present(self):
+        _, body = self.get("/api/eval")
+        if not body.get("available"):
+            self.skipTest("还没跑过 evaluate.py --write-result")
+        self.assertGreater(body["total"], 0)
+        self.assertAlmostEqual(
+            body["accuracy"], body["correct"] / body["total"], places=4
+        )
+        low, high = body["ci95"]
+        self.assertLessEqual(low, body["accuracy"])
+        self.assertGreaterEqual(high, body["accuracy"])
+
+
 class TestHealth(ServerCase):
     def test_health(self):
         status, body = self.get("/api/health")

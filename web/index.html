@@ -157,9 +157,12 @@
       被要求表态回蚌、一刀切批判回批、自己蹦出金句回赢、驳不动了回麻。
     </p>
     <p class="sub">
-      引擎是 <a href="https://github.com/TheoLeeCJ/SemIf-OpenJev" target="_blank" rel="noopener">SemIf-OpenJev</a>（开源版 Jev，MIT），
+      引擎是 <a href="https://github.com/TheoLeeCJ/SemIf-OpenJev" target="_blank" rel="noopener">SemIf-OpenJev</a>
+      —— <b>独立</b>开源实现（MIT），<b>不是 Jev 官方开源版</b>，与 Jev / TypeSafe AI 无隶属关系；
+      它复现的是 Jev 公开描述过的「决策模型」接口形态。
       基座是 Qwen3.5-2B。它<b>不生成任何文字</b>：把每个字绑到一个单 token 的字母槽位，
-      一次前向传播直接读出概率分布。干净测试集 24 条实测 <b>96%</b>。
+      一次前向传播直接读出概率分布。
+      干净测试集实测 <b id="eval-accuracy">—</b><span id="eval-detail"></span>。
       <code>Ctrl</code> + <code>Enter</code> 快速判定。
     </p>
   </header>
@@ -212,6 +215,28 @@ function esc(s) {
 }
 
 /* ------------------------------------------------------------ 初始化 */
+
+/** 把干净集的头条数字填进副标题；拿不到就显示「—」。 */
+async function showEval() {
+  const acc = $("eval-accuracy");
+  const detail = $("eval-detail");
+  try {
+    const d = await (await fetch("/api/eval")).json();
+    if (!d.available) {
+      acc.textContent = "—";
+      detail.textContent = "（还没跑过评测：python scripts/evaluate.py --perms 5 --write-result）";
+      return;
+    }
+    acc.textContent = (d.accuracy * 100).toFixed(1) + "%";
+    const ci = d.ci95
+      ? `（95% 置信区间 ${(d.ci95[0] * 100).toFixed(1)}%~${(d.ci95[1] * 100).toFixed(1)}%）`
+      : "";
+    detail.textContent = `（${d.total} 条 · ${d.permutations} 排列 · 中位 ${Math.round(d.median_ms)} ms）${ci}`;
+  } catch (e) {
+    acc.textContent = "—";
+  }
+}
+
 async function boot() {
   try {
     const d = await (await fetch("/api/labels")).json();
@@ -221,6 +246,12 @@ async function boot() {
     setStatus("拿不到词表配置：" + e.message, true);
     return;
   }
+
+  // 头条数字从服务读，不写在页面里。
+  // 页面曾经硬编码「干净测试集 24 条实测 96%」，后来测试集因为修数据泄漏
+  // 换成 52 条、真实水平 80.8%，而页面上的 96% 一直没人改 ——
+  // 一个已经作废的数字就这么挂在了首页。
+  showEval();
 
   $("glyphs").innerHTML = LABELS.map((l) => `<span>${esc(l.id)}</span>`).join("");
   renderEmptyBars();

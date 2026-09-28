@@ -1,0 +1,13 @@
+{
+  "dataset": "data/eval_clean.jsonl",
+  "permutations": 5,
+  "total": 52,
+  "correct": 42,
+  "accuracy": 0.8077,
+  "ci95": [
+    0.681,
+    0.892
+  ],
+  "median_ms": 520.9,
+  "note": "由 scripts/evaluate.py --write-result 生成；网页和文档从这里读头条数字"
+}

@@ -111,6 +111,27 @@ class Handler(BaseHTTPRequestHandler):
             )
             return
 
+        if path == "/api/eval":
+            # 干净集的头条数字。由 `scripts/evaluate.py --write-result` 生成。
+            #
+            # 为什么要走接口而不是写在页面里：页面原来硬编码「24 条 96%」，
+            # 测试集换成 52 条之后没人记得改，于是一个**已经作废的数字**
+            # 在页面上挂了很久。数字只有一个出处，页面才不会过期。
+            result_path = PROJECT_ROOT / "data" / "eval_result.json"
+            if not result_path.is_file():
+                self._json(
+                    200,
+                    {
+                        "ok": True,
+                        "available": False,
+                        "note": "还没跑过 evaluate.py --write-result",
+                    },
+                )
+                return
+            payload = json.loads(result_path.read_text(encoding="utf-8"))
+            self._json(200, {"ok": True, "available": True, **payload})
+            return
+
         if path in ("/", "/index.html"):
             self._serve_file(WEB_DIR / "index.html")
             return
