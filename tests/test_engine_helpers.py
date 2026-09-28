@@ -12,13 +12,13 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from biaochi.engine import (  # noqa: E402
+from tiaoyige.engine import (  # noqa: E402
     DEFAULT_PERMUTATIONS,
     TOKEN_BUDGET,
     adaptive_permutations,
     permutations_of,
 )
-from biaochi.labels import MEME_LABELS  # noqa: E402
+from tiaoyige.labels import MEME_LABELS  # noqa: E402
 
 
 class TestPermutations(unittest.TestCase):
@@ -90,7 +90,7 @@ class TestAdaptivePermutations(unittest.TestCase):
 
 class TestModelChoices(unittest.TestCase):
     def test_every_choice_has_a_revision(self):
-        from biaochi.engine import MODEL_CHOICES
+        from tiaoyige.engine import MODEL_CHOICES
 
         self.assertIn("qwen3.5-2b", MODEL_CHOICES)
         for name, (directory, revision) in MODEL_CHOICES.items():

@@ -31,7 +31,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from biaochi.version import __version__ as VERSION  # noqa: E402
+from tiaoyige.version import __version__ as VERSION  # noqa: E402
 
 
 def _load_build_module():
@@ -46,16 +46,16 @@ def _load_build_module():
 
 build = _load_build_module()
 
-TOP = f"biaochi-{VERSION}"
+TOP = f"tiaoyige-{VERSION}"
 
 #: 包里必须有的东西。挑的是「少了用户就跑不起来 / 就没法校验」的那些：
 #: 服务代码、页面、启动器、模型下载器、vendor 引擎、许可、版本号、清单。
 REQUIRED_FILES = (
-    "biaochi/__init__.py",
-    "biaochi/engine.py",
-    "biaochi/server.py",
-    "biaochi/version.py",
-    "biaochi/labels.py",
+    "tiaoyige/__init__.py",
+    "tiaoyige/engine.py",
+    "tiaoyige/server.py",
+    "tiaoyige/version.py",
+    "tiaoyige/labels.py",
     "web/index.html",
     "scripts/build_release.py",
     "scripts/launch.ps1",
@@ -96,7 +96,7 @@ class BuildFixture(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.tmp = tempfile.TemporaryDirectory(prefix="biaochi-release-test-")
+        cls.tmp = tempfile.TemporaryDirectory(prefix="tiaoyige-release-test-")
         cls.out_dir = Path(cls.tmp.name) / "dist"
         with redirect_stdout(io.StringIO()):
             code = build.main(["--out", str(cls.out_dir)])
@@ -118,7 +118,7 @@ class BuildFixture(unittest.TestCase):
 class TestPackageShape(BuildFixture):
     def test_zip_exists_with_expected_name(self):
         self.assertTrue(self.zip_path.is_file())
-        self.assertEqual(self.zip_path.name, f"biaochi-{VERSION}-{build.default_platform()}.zip")
+        self.assertEqual(self.zip_path.name, f"tiaoyige-{VERSION}-{build.default_platform()}.zip")
 
     def test_single_top_level_directory(self):
         """解压不能散落一地 —— 用户是往桌面/下载目录里解压的。"""
@@ -154,7 +154,7 @@ class TestRequiredContents(BuildFixture):
 
     def test_manifest_version_fields(self):
         self.assertEqual(self.manifest["version"], VERSION)
-        self.assertEqual(self.manifest["name"], "biaochi")
+        self.assertEqual(self.manifest["name"], "tiaoyige")
         self.assertEqual(self.manifest["platform"], build.default_platform())
         self.assertEqual(self.manifest["schema"], build.read_version()[1])
 
@@ -200,14 +200,14 @@ class TestExclusionRulesOnSyntheticTree(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.tmp = tempfile.TemporaryDirectory(prefix="biaochi-fake-tree-")
+        self.tmp = tempfile.TemporaryDirectory(prefix="tiaoyige-fake-tree-")
         self.root = Path(self.tmp.name)
         self._real_root = build.PROJECT_ROOT
         build.PROJECT_ROOT = self.root
         self.addCleanup(self._restore)
 
         for relative in (
-            "biaochi/server.py",
+            "tiaoyige/server.py",
             "data/eval_clean.jsonl",
             "data/profiles/我的词表.json",
             "data/profiles/.gitkeep",
@@ -217,7 +217,7 @@ class TestExclusionRulesOnSyntheticTree(unittest.TestCase):
             "__pycache__/x.pyc",
             "web/__pycache__/x.pyc",
             "scripts/junk.pyc",
-            "dist/biaochi-4.1.0-win64.zip",
+            "dist/tiaoyige-4.2.0-win64.zip",
             ".github/workflows/release.yml",
             "vendor/SemIf-OpenJev/src/semif_phase1/core.py",
             "vendor/SemIf-OpenJev/results/raw/big.jsonl",
@@ -237,7 +237,7 @@ class TestExclusionRulesOnSyntheticTree(unittest.TestCase):
 
     def test_keeps_wanted_files(self):
         found = self.collect()
-        self.assertIn("biaochi/server.py", found)
+        self.assertIn("tiaoyige/server.py", found)
         self.assertIn("data/eval_clean.jsonl", found)
         self.assertIn("data/profiles/.gitkeep", found)
         self.assertIn("vendor/SemIf-OpenJev/src/semif_phase1/core.py", found)
@@ -252,7 +252,7 @@ class TestExclusionRulesOnSyntheticTree(unittest.TestCase):
             "__pycache__/x.pyc",
             "web/__pycache__/x.pyc",
             "scripts/junk.pyc",
-            "dist/biaochi-4.1.0-win64.zip",
+            "dist/tiaoyige-4.2.0-win64.zip",
             ".github/workflows/release.yml",
             "vendor/SemIf-OpenJev/results/raw/big.jsonl",
             "vendor/SemIf-OpenJev/webgpu-demo/app.js",
@@ -267,7 +267,7 @@ class TestExclusionRulesOnSyntheticTree(unittest.TestCase):
         files = build.collect_files(self.root / "dist", True)
         buffer = io.StringIO()
         with redirect_stderr(buffer):
-            payload = build.build_payload(files, "4.1.0", 1, "biaochi", "win64", True)
+            payload = build.build_payload(files, "4.2.0", 1, "tiaoyige", "win64", True)
         self.assertIn("models/Qwen3.5-2B/model.safetensors", payload)
         warnings = buffer.getvalue()
         self.assertIn("2GB", warnings)
@@ -325,7 +325,7 @@ class TestReproducibleBuild(unittest.TestCase):
         哈希就没有意义。built_at 是唯一允许变动的字段。
         """
         manifests = []
-        tmp = tempfile.TemporaryDirectory(prefix="biaochi-repro-test-")
+        tmp = tempfile.TemporaryDirectory(prefix="tiaoyige-repro-test-")
         self.addCleanup(tmp.cleanup)
         for index in range(2):
             out_dir = Path(tmp.name) / f"dist{index}"
@@ -398,13 +398,13 @@ class TestLineEndings(BuildFixture):
         self.assertNotIn(b"\r", data, "CRLF 的 shell 脚本在 Linux 上会报 bad interpreter")
 
     def test_python_files_keep_lf(self):
-        data = self.read("biaochi/engine.py")
+        data = self.read("tiaoyige/engine.py")
         self.assertNotIn(b"\r", data)
 
 
 class TestCliContract(unittest.TestCase):
     def setUp(self) -> None:
-        self.tmp = tempfile.TemporaryDirectory(prefix="biaochi-cli-test-")
+        self.tmp = tempfile.TemporaryDirectory(prefix="tiaoyige-cli-test-")
         self.addCleanup(self.tmp.cleanup)
         self.out_dir = Path(self.tmp.name) / "dist"
 
@@ -423,7 +423,7 @@ class TestCliContract(unittest.TestCase):
 
     def test_expect_tag_rejects_mismatch(self):
         """tag 和 version.py 不一致时必须失败 —— 这是 CI 里唯一的防线。"""
-        for tag in ("v0.0.1", "v4.1.0-rc1", "release-4"):
+        for tag in ("v0.0.1", "v4.2.0-rc1", "release-4"):
             with self.assertRaises(SystemExit) as caught:
                 self.run_main(["--out", str(self.out_dir), "--expect-tag", tag])
             self.assertEqual(caught.exception.code, 2, tag)
@@ -436,13 +436,13 @@ class TestCliContract(unittest.TestCase):
     def test_list_writes_nothing(self):
         code, output = self.run_main(["--list", "--out", str(self.out_dir)])
         self.assertEqual(code, 0)
-        self.assertIn("biaochi/engine.py", output)
+        self.assertIn("tiaoyige/engine.py", output)
         self.assertFalse(self.out_dir.exists(), "--list 不该写任何东西")
 
     def test_no_zip_writes_a_tree(self):
         code, _ = self.run_main(["--out", str(self.out_dir), "--no-zip"])
         self.assertEqual(code, 0)
-        self.assertTrue((self.out_dir / TOP / "biaochi" / "engine.py").is_file())
+        self.assertTrue((self.out_dir / TOP / "tiaoyige" / "engine.py").is_file())
         self.assertTrue((self.out_dir / TOP / "release-manifest.json").is_file())
         self.assertFalse(list(self.out_dir.glob("*.zip")))
 
@@ -474,7 +474,7 @@ class TestPackagedTreeIsUsable(BuildFixture):
         package = target / TOP
 
         code = (
-            "import biaochi.engine as engine, biaochi.server, biaochi.profiles\n"
+            "import tiaoyige.engine as engine, tiaoyige.server, tiaoyige.profiles\n"
             "import semif_phase1.core, semif_phase1.direct\n"
             "print(engine.__file__)\n"
             "print(semif_phase1.core.__file__)\n"

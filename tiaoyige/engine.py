@@ -147,7 +147,7 @@ def _messages(evidence: str, criterion: str, options: list[dict[str, str]]) -> l
     ]
 
 
-class Biaochi:
+class Tiaoyige:
     """常驻内存的判定器：加载一次，之后每次判定只要一次 forward。"""
 
     def __init__(
@@ -415,7 +415,7 @@ class Biaochi:
 
 
 __all__ = [
-    "Biaochi",
+    "Tiaoyige",
     "LABELS_BY_ID",
     "MEME_LABELS",
     "DEFAULT_MODEL_DIR",

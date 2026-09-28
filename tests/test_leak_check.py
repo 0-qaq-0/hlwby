@@ -3,7 +3,7 @@
 检查器写错了比不写更糟 —— 它会给你一个「通过」的假安心。
 所以这里把它的**边界**也测了。
 
-从 v4 起度量本体搬到了 `biaochi/textcheck.py`（页面上的词表编辑器要用同一套，
+从 v4 起度量本体搬到了 `tiaoyige/textcheck.py`（页面上的词表编辑器要用同一套，
 不然「命令行说没泄漏」和「页面没报警」会是两个标准），
 `scripts/leak_check.py` 只剩一层命令行外壳。所以下面测的是**本体**，
 另外再钉一条「外壳和本体必须是同一套阈值」。
@@ -19,7 +19,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from biaochi import textcheck  # noqa: E402
+from tiaoyige import textcheck  # noqa: E402
 
 
 def _load_script():

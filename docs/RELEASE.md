@@ -15,8 +15,8 @@
 
 | 文件名 | 平台 |
 | --- | --- |
-| `biaochi-<版本>-win64.zip` | Windows 10/11（x64） |
-| `biaochi-<版本>-linux.zip` | Linux（x64） |
+| `tiaoyige-<版本>-win64.zip` | Windows 10/11（x64） |
+| `tiaoyige-<版本>-linux.zip` | Linux（x64） |
 
 macOS 没有单独的包 —— `start.sh` 是通用的 bash 脚本，直接下 `linux` 那个包也能用
 （见下面「macOS 与 CPU-only」）。
@@ -33,7 +33,7 @@ macOS 没有单独的包 —— `start.sh` 是通用的 bash 脚本，直接下 
 
 ```bash
 git clone https://github.com/0-qaq-0/hlwby.git
-cd biaochi
+cd tiaoyige
 ```
 
 然后同样双击 `一键启动.bat` / 执行 `./start.sh`。源码树和 release 包的区别只有一个：
@@ -45,17 +45,17 @@ cd biaochi
 ## 二、包里有什么
 
 ```
-biaochi-<版本>/
+tiaoyige-<版本>/
 ├── 一键启动.bat          Windows 双击入口（转调 scripts/launch.ps1）
 ├── start.sh              Linux / macOS 入口
 ├── run.ps1               环境已经配好时的极简启动脚本
 ├── README-启动.md        面向用户的中文快速上手
 ├── README.md             项目总览
-├── VERSION               版本号（纯文本，内容是 biaochi/version.py 的 __version__）
+├── VERSION               版本号（纯文本，内容是 tiaoyige/version.py 的 __version__）
 ├── release-manifest.json 文件清单 + 每个文件的字节数和 sha256
 ├── requirements.txt      运行时依赖
 ├── LICENSE               MIT
-├── biaochi/             判定引擎、HTTP 服务、内置判断类型
+├── tiaoyige/             判定引擎、HTTP 服务、内置判断类型
 ├── web/                  页面（纯静态，无构建步骤）
 ├── scripts/              下载模型 / 评测 / 各类检查 / 本打包脚本
 ├── tests/                测试（不联网、不加载模型、不需要显卡）
@@ -70,7 +70,7 @@ biaochi-<版本>/
 ### vendor 子集是怎么挑的
 
 上游整个仓库都在源码树里，但运行时只 import `semif_phase1.core` 和 `semif_phase1.direct`
-（见 `biaochi/engine.py` 顶部的 `sys.path` 注入）。所以包里只带：
+（见 `tiaoyige/engine.py` 顶部的 `sys.path` 注入）。所以包里只带：
 
 * `vendor/SemIf-OpenJev/src/semif_phase1/*.py`（整个包目录，多带几个模块只多几十 KB，
   但能防止哪天 engine 多 import 一个模块就在用户机器上炸）
@@ -100,15 +100,15 @@ tests/ docs/ examples/` —— 那些是上游的评测证据和演示，加起�
 
 ```json
 {
-  "name": "biaochi",
-  "version": "4.1.0",
+  "name": "tiaoyige",
+  "version": "4.2.0",
   "schema": 1,
   "platform": "win64",
   "built_at": "2026-01-01T00:00:00Z",
   "python": "3.10.11",
   "file_count": 74,
   "total_bytes": 697000,
-  "files": [{ "path": "biaochi/engine.py", "bytes": 17101, "sha256": "…" }]
+  "files": [{ "path": "tiaoyige/engine.py", "bytes": 17101, "sha256": "…" }]
 }
 ```
 
@@ -122,12 +122,12 @@ GitHub Release 页面上每个附件旁边就有 sha256（构建日志里也会�
 
 ```powershell
 # Windows PowerShell
-Get-FileHash -Algorithm SHA256 .\biaochi-4.1.0-win64.zip
+Get-FileHash -Algorithm SHA256 .\tiaoyige-4.2.0-win64.zip
 ```
 
 ```bash
 # Linux / macOS
-sha256sum biaochi-4.1.0-linux.zip
+sha256sum tiaoyige-4.2.0-linux.zip
 ```
 
 ### 再逐个文件校验（推荐，能查出「解压坏了」和「被改过」）
@@ -135,7 +135,7 @@ sha256sum biaochi-4.1.0-linux.zip
 解压之后，在包目录里跑：
 
 ```bash
-cd biaochi-4.1.0
+cd tiaoyige-4.2.0
 python3 - <<'PY'
 import hashlib, json, pathlib
 manifest = json.loads(pathlib.Path("release-manifest.json").read_text(encoding="utf-8"))
@@ -153,7 +153,7 @@ PY
 
 ```powershell
 # Windows PowerShell 版
-$pkg = "biaochi-4.1.0"
+$pkg = "tiaoyige-4.2.0"
 $manifest = Get-Content "$pkg\release-manifest.json" -Raw -Encoding UTF8 | ConvertFrom-Json
 $bad = @()
 foreach ($f in $manifest.files) {
@@ -172,12 +172,12 @@ if ($bad.Count -gt 0) { exit 1 }
 
 ## 四、维护者：怎么切一个新 release
 
-版本号只有一个出处：`biaochi/version.py` 的 `__version__`。
+版本号只有一个出处：`tiaoyige/version.py` 的 `__version__`。
 `/api/health`、页面页脚、`VERSION` 文件、manifest 里的 `version` 全都读它。
 
 ```powershell
 # 1. 改版本号（唯一一处）
-#    biaochi/version.py -> __version__ = "4.0.1"
+#    tiaoyige/version.py -> __version__ = "4.0.1"
 #    判断类型 / API / 页面这类用户可见的东西有变化才进版本位
 
 # 2. 跑测试（几秒钟，不联网、不加载模型、不占显存）
@@ -206,12 +206,12 @@ git push origin main --tags
 **tag 必须和 `version.py` 一致**，否则构建会直接失败：
 
 ```
-[build] 失败：tag「v4.0.1」和 biaochi/version.py 里的版本号「4.1.0」不一致。
-[build] 请先把 version.py 的 __version__ 改成 4.0.1 再打 tag，或者把 tag 改成 v4.1.0。
+[build] 失败：tag「v4.0.1」和 tiaoyige/version.py 里的版本号「4.2.0」不一致。
+[build] 请先把 version.py 的 __version__ 改成 4.0.1 再打 tag，或者把 tag 改成 v4.2.0。
 ```
 
 这条检查在 `build_release.py --expect-tag` 里，CI 里唯一的防线就是它 ——
-Release 页面写着 v4.0.1、包里却是 4.1.0 的代码，是那种发出去之后才发现的错误。
+Release 页面写着 v4.0.1、包里却是 4.2.0 的代码，是那种发出去之后才发现的错误。
 
 发布说明：仓库里有 `docs/RELEASE_NOTES.md` 就用它（人工写的更准），
 没有就让 GitHub 用 `--generate-notes` 按 commit 自动生成。
@@ -235,12 +235,12 @@ gh workflow run release.yml -f tag=v4.0.1
 ## 五、手动构建（不走 CI）
 
 ```bash
-python scripts/build_release.py --out dist          # 产出 dist/biaochi-4.1.0-win64.zip
+python scripts/build_release.py --out dist          # 产出 dist/tiaoyige-4.2.0-win64.zip
 python scripts/build_release.py --list              # 只看包里会有什么，不写文件
 python scripts/build_release.py --no-zip            # 铺成目录，方便自己再压一次
 python scripts/build_release.py --platform linux    # 换个平台标签（只影响文件名）
-python scripts/build_release.py --name biaochi --version 4.1.0
-python scripts/build_release.py --expect-tag v4.1.0 # 校验 tag 与版本号一致
+python scripts/build_release.py --name tiaoyige --version 4.2.0
+python scripts/build_release.py --expect-tag v4.2.0 # 校验 tag 与版本号一致
 python scripts/build_release.py --print-version     # 只吐版本号（CI 拼 tag 用）
 ```
 
@@ -285,12 +285,12 @@ python -m venv .venv
 
 ## 七、CPU-only 与 macOS
 
-引擎的设备选择只认 `cuda` 和 `cpu`（`biaochi/engine.py` 的 `pick_device`）。
+引擎的设备选择只认 `cuda` 和 `cpu`（`tiaoyige/engine.py` 的 `pick_device`）。
 所以：
 
 * **没有 NVIDIA 显卡**：启动器会打印一句「用 CPU 跑，会慢很多」然后继续。
   判一条从零点几秒变成几秒，功能完全一样。
-* **macOS**：torch 的 MPS 后端**标尺用不上** —— `pick_device` 不会返回 `mps`。
+* **macOS**：torch 的 MPS 后端**帮你挑一个用不上** —— `pick_device` 不会返回 `mps`。
   Mac 上就是 CPU 跑。想强制指定用 `--device cpu` / `-Device cpu`。
 * **AMD 显卡**：同理，走 CPU。
 

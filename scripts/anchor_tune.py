@@ -37,7 +37,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from biaochi import DEFAULT_MODEL_DIR, DEFAULT_REVISION, CRITERION, MEME_LABELS, Biaochi  # noqa: E402
+from tiaoyige import DEFAULT_MODEL_DIR, DEFAULT_REVISION, CRITERION, MEME_LABELS, Tiaoyige  # noqa: E402
 
 DATA = PROJECT_ROOT / "data" / "eval_clean.jsonl"
 
@@ -97,7 +97,7 @@ def main() -> None:
         for line in args.data.read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
-    engine = Biaochi(model_dir=args.model_dir, revision=args.revision, device=args.device)
+    engine = Tiaoyige(model_dir=args.model_dir, revision=args.revision, device=args.device)
     engine.load()
     print(f"设备 {engine.metadata['device']} | 数据 {args.data.name} | {len(rows)} 条")
     print(f"排列数 {args.perms}\n")

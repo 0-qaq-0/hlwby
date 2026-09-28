@@ -21,7 +21,7 @@ windows-latest 上失败，退出码 1，日志里只有一句「Process complet
 把 stdout/stderr 换成 UTF-8，并且 `errors="replace"`：万一还有编不出来的字符，
 宁可显示成问号，也不要让一个「打印进度」的动作把整个任务搞崩。
 
-`biaochi/__init__.py` 会在 import 时自动调它（这个包是应用不是库，
+`tiaoyige/__init__.py` 会在 import 时自动调它（这个包是应用不是库，
 用户不该为了看中文去记一个环境变量）；不 import 本包的独立脚本
 （比如 `scripts/build_release.py`）自己显式调一次。
 """

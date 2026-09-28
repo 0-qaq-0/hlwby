@@ -13,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from biaochi.labels import CRITERION, EXAMPLES, LABEL_IDS, MEME_LABELS  # noqa: E402
+from tiaoyige.labels import CRITERION, EXAMPLES, LABEL_IDS, MEME_LABELS  # noqa: E402
 
 EXPECTED = "典孝急乐蚌批赢麻"
 

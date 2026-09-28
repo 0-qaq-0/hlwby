@@ -38,15 +38,15 @@
   写成文本形态（「逐条辩论、分点回击，常见开头是『第一……第二……』」）准确率从
   **50% 跳到 96%**。换锚点比换模型便宜得多。
 
-**用户类型存在 `data/profiles/<id>.json`，内置类型在代码里**（`biaochi/labels.py`
-的「八艺」+ `biaochi/builtin_profiles/*.json`）。两者在接口上长得一样，区别只有两条：
+**用户类型存在 `data/profiles/<id>.json`，内置类型在代码里**（`tiaoyige/labels.py`
+的「八艺」+ `tiaoyige/builtin_profiles/*.json`）。两者在接口上长得一样，区别只有两条：
 内置的改不了、删不掉（想改就另存为一份新的），以及「八艺」是唯一评测过的那一套。
 
 ---
 
 ## 二、一个 profile 有哪些字段
 
-字段定义在 `biaochi/profiles.py` 的 `Profile` 数据类里（`Profile` / `to_dict` /
+字段定义在 `tiaoyige/profiles.py` 的 `Profile` 数据类里（`Profile` / `to_dict` /
 `from_dict`），校验规则在同文件的 `validate()`。
 
 | 字段 | 类型 | 必填 | 干什么用的 |
@@ -62,7 +62,7 @@
 | `builtin` | bool | 否 | 内置标记。**保存时会被强制改回 `false`** —— 存下来的一定是用户类型 |
 | `evaluated` | bool | 否 | 有没有在干净测试集上评测过。`false` 时 `validate()` 会提示一句 |
 | `updated_at` | str | 否 | 保存时由 `ProfileStore.save()` 写成 UTC ISO 时间，不用手填 |
-| `schema` | int | 否 | 数据格式版本（`biaochi/version.py` 的 `SCHEMA_VERSION`）。保存/导出时写出，读入时忽略 |
+| `schema` | int | 否 | 数据格式版本（`tiaoyige/version.py` 的 `SCHEMA_VERSION`）。保存/导出时写出，读入时忽略 |
 
 `labels[]` 里每一项：
 
@@ -125,7 +125,7 @@ SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{1,47}$")
 
 ### 3. `bayi` 是内置只读 id
 
-`bayi` 是「八艺」的 id，权威出处是 `biaochi/labels.py`。它**永远在、只读**：
+`bayi` 是「八艺」的 id，权威出处是 `tiaoyige/labels.py`。它**永远在、只读**：
 
 * `save()` 撞上 `bayi` 直接抛 `ProfileError`：「bayi 是内置类型的 id（它永远在，只读），
   换一个，比如 bayi-2」；
@@ -134,7 +134,7 @@ SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{1,47}$")
   用户类型**不能顶掉**内置类型。想改八艺的锚点，另存为 `bayi-2`。
 
 另外，`POST /api/profiles/delete` 只删 `data/profiles/` 里的用户类型，
-内置目录 `biaochi/builtin_profiles/` 和 `labels.py` 都不在它的射程内。
+内置目录 `tiaoyige/builtin_profiles/` 和 `labels.py` 都不在它的射程内。
 
 ---
 
@@ -371,7 +371,7 @@ prompt 里刚念过的句子，模型当然判得对，这个「必对」零信�
 直接抄了锚点（重合度 **1.00** 和 **0.27**，后者等于把锚点例句改了两个字）。
 两处都换掉之后，8/8 才是真的。
 
-`validate()` 用的是和 `leak_check.py` 完全同一份实现（`biaochi/textcheck.py`），
+`validate()` 用的是和 `leak_check.py` 完全同一份实现（`tiaoyige/textcheck.py`），
 对每条页面示例算它和**最像的那个锚点**的字面重合度：
 
 | 重合度 | 判定 | 含义 |
@@ -387,7 +387,7 @@ prompt 里刚念过的句子，模型当然判得对，这个「必对」零信�
 
 ## 六、`validate()` 会报什么
 
-规则全部在 `biaochi/profiles.py` 的 `validate()` 里，页面编辑器、`profiles_check.py`、
+规则全部在 `tiaoyige/profiles.py` 的 `validate()` 里，页面编辑器、`profiles_check.py`、
 `POST /api/profiles/validate` 调的都是同一份实现。
 
 ### error —— 拦住保存
@@ -469,9 +469,9 @@ $py = ".\.venv\Scripts\python.exe"
 ```
 
 > **注意它的覆盖范围**：`scripts/leak_check.py` 检查的是
-> `data/eval_clean.jsonl`、`data/eval_overlap.jsonl` 和 `biaochi/labels.py` 的页面示例 ——
+> `data/eval_clean.jsonl`、`data/eval_overlap.jsonl` 和 `tiaoyige/labels.py` 的页面示例 ——
 > 也就是**「八艺」那一套**。自定义类型的示例与锚点由 `validate()` 里的同一套算法兜着
-> （`biaochi/textcheck.py` 是两者共用的实现），所以在页面/接口保存时会当场提示，
+> （`tiaoyige/textcheck.py` 是两者共用的实现），所以在页面/接口保存时会当场提示，
 > 但**你的自定义测试集不在这个脚本的射程内** —— 自己写的数据集要自己盯（第三层）。
 
 ### 第三层：拿**干净测试集**量（唯一有意义的数字）

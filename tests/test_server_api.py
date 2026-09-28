@@ -19,8 +19,8 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from biaochi.profiles import ProfileStore  # noqa: E402
-from biaochi.server import Handler, MAX_BODY_BYTES, MAX_TEXT_CHARS  # noqa: E402
+from tiaoyige.profiles import ProfileStore  # noqa: E402
+from tiaoyige.server import Handler, MAX_BODY_BYTES, MAX_TEXT_CHARS  # noqa: E402
 
 
 class FakeEngine:

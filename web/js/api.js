@@ -1,7 +1,7 @@
 /* 后端接口的唯一入口。
  *
  * 所有 fetch 都从这里走，别在别处直接写 URL —— 这样「接口长什么样」
- * 只有一处需要跟 `biaochi/server.py` 对齐。
+ * 只有一处需要跟 `tiaoyige/server.py` 对齐。
  */
 
 async function request(path, options = {}) {

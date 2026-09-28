@@ -26,7 +26,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from biaochi.profiles import DEFAULT_PROFILE_ID  # noqa: E402
+from tiaoyige.profiles import DEFAULT_PROFILE_ID  # noqa: E402
 
 
 def get(url: str) -> dict:
@@ -63,11 +63,11 @@ def main() -> None:
         health = get(base + "/api/health")
     except (urllib.error.URLError, OSError) as error:
         print(f"连不上 {base}：{error}")
-        print("先把服务起起来：.venv\\Scripts\\python.exe -m biaochi.server")
+        print("先把服务起起来：.venv\\Scripts\\python.exe -m tiaoyige.server")
         sys.exit(2)
 
     print(
-        f"服务 {base} · 标尺 v{health.get('version', '?')} · {health['model_name']} · "
+        f"服务 {base} · 帮你挑一个 v{health.get('version', '?')} · {health['model_name']} · "
         f"{health['device']}/{health['dtype']} · 默认 {health['default_permutations']} 排列"
     )
     print(f"判断类型 {len(health['profiles'])} 套：{'、'.join(health['profiles'])}\n")

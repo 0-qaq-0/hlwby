@@ -1,10 +1,11 @@
-# 标尺 · 这条评论该回哪个字
+# 帮你挑一个
 
-**标尺**是一个「不写字」的判定器：给它一段文本、再给它一组你自己定的选项，
-它告诉你最贴切的是哪个。**判定标准（锚点）是运行时的数据，改它不用重训。**
+给它一段文本、再给它一组你自己定的选项，它**帮你挑一个**。
 
-内置的那套是网络梗「八艺」—— 把**别人的一条评论**粘进来，看看该用哪个字回他：
+模型**不写字** —— 它只在一次前向传播里读出「下一个字母是 A / B / C …」的概率，
+所以小模型也能做到半秒级。**判定标准（锚点）是运行时的数据，改它不用重训。**
 
+内置的那套是网络梗「八艺」：把**别人的一条评论**粘进来，看看该用哪个字回他。
 词表是八个字 —— **典 孝 急 乐 蚌 批 赢 麻**：
 
 | 字 | 什么时候回 | 视角 |
@@ -37,7 +38,7 @@
 ## 一、下载即用
 
 不想碰命令行的话，去 [Releases](https://github.com/0-qaq-0/hlwby/releases) 下载
-`biaochi-<版本>-win64.zip`，解压，双击 **`一键启动.bat`**。它会自己：
+`tiaoyige-<版本>-win64.zip`，解压，双击 **`一键启动.bat`**。它会自己：
 
 1. 找 Python（没有就告诉你去哪装）；
 2. 建虚拟环境、装依赖（默认官方源，国内慢就用 `-Mirror` 走清华源）；
@@ -56,7 +57,7 @@ release 包里有什么、怎么校验、怎么自己切一个版本，见 [docs
 
 ```powershell
 git clone https://github.com/0-qaq-0/hlwby.git
-cd biaochi
+cd tiaoyige
 
 # 1) 建环境（Python 3.10+）
 py -3.10 -m venv .venv
@@ -71,7 +72,7 @@ py -3.10 -m venv .venv
 .\.venv\Scripts\python.exe scripts\download_model.py --model qwen3.5-2b
 
 # 4) 起服务
-.\.venv\Scripts\python.exe -m biaochi.server --open-browser
+.\.venv\Scripts\python.exe -m tiaoyige.server --open-browser
 ```
 
 然后打开 **<http://127.0.0.1:8770/>**。
@@ -202,7 +203,7 @@ py -3.10 -m venv .venv
 1. **页面上改**（推荐）：`词表` 标签页 → 新建 / 选一套 → 改锚点 → 保存。
    边改边校验，改完**不用重启服务**，判定页立刻就是新词表。
 2. **直接写文件**：`data/profiles/<id>.json`，格式照抄
-   [`biaochi/builtin_profiles/`](biaochi/builtin_profiles/) 里那两份。
+   [`tiaoyige/builtin_profiles/`](tiaoyige/builtin_profiles/) 里那两份。
 3. **导入导出**：页面上的「导出 JSON」发给别人，对方「导入」即可。
 
 ![词表编辑器](docs/screenshot-labels.png)
@@ -217,7 +218,7 @@ py -3.10 -m venv .venv
 
 ### 改锚点时，校验会拦住已知会翻车的写法
 
-`词表` 页右边实时跑的就是 `biaochi/profiles.py` 里的 `validate()`，
+`词表` 页右边实时跑的就是 `tiaoyige/profiles.py` 里的 `validate()`，
 **错误**拦住保存，**提示**只是提示（这些是经验，不是定理）：
 
 | 会报什么 | 为什么 |
@@ -359,7 +360,7 @@ curl -X POST http://127.0.0.1:8770/api/decide `
 ## 八、项目结构
 
 ```
-标尺/
+帮你挑一个/
 ├── 一键启动.bat / start.sh      # ★ release 包的一键入口（源码树里也在）
 ├── run.ps1                     # 源码树里的一键启动（转调 scripts/launch.ps1）
 ├── README-启动.md               # 给「只想双击一下」的人看的快速上手
@@ -367,7 +368,7 @@ curl -X POST http://127.0.0.1:8770/api/decide `
 ├── vendor/SemIf-OpenJev/       # 开源实现（上游原样，MIT，pinned commit）
 │   └── src/semif_phase1/       #   core.py / direct.py 是判定核心
 ├── models/Qwen3.5-2B/          # 基座模型权重（项目内，离线可跑，不入库）
-├── biaochi/
+├── tiaoyige/
 │   ├── labels.py               # ★ 「八艺」八个字的锚点描述 + 页面示例 + 问法
 │   ├── profiles.py             # ★ 判断类型：数据模型 + 校验规则 + 存取/导入导出
 │   ├── builtin_profiles/       # ★ 内置示例类型：客服分流、内容处置
@@ -479,7 +480,7 @@ curl -X POST http://127.0.0.1:8770/api/decide `
 
 ### 这几条教训现在都变成了可执行的检查
 
-v4 之后它们不只活在文档里：`biaochi/profiles.py` 的 `validate()` 会在你改锚点时
+v4 之后它们不只活在文档里：`tiaoyige/profiles.py` 的 `validate()` 会在你改锚点时
 当场把「泛化短语 / 提到别的选项名 / 没有例句 / 示例抄锚点」报出来，
 页面上的词表编辑器和命令行的 `scripts/profiles_check.py` 用的是**同一份规则**。
 
@@ -513,7 +514,7 @@ scripts/evaluate.py --write-result
 
 ## 十、改锚点 = 改判定逻辑，不用重训
 
-八个字的全部定义都写在 `biaochi/labels.py` 的 `MEME_LABELS` 里，
+八个字的全部定义都写在 `tiaoyige/labels.py` 的 `MEME_LABELS` 里，
 每个字一段 `description` —— **这段文本是推理时才读进去的，不写进任何权重**。
 所以：
 
@@ -552,7 +553,7 @@ scripts/evaluate.py --write-result
 
 ```powershell
 # 更小更快（1.4 GB），准确率会掉
-& $py -m biaochi.server --model qwen3-0.6b
+& $py -m tiaoyige.server --model qwen3-0.6b
 ```
 
 | 基座 | 体积 | 准确率 | 中位延迟 |
@@ -561,7 +562,7 @@ scripts/evaluate.py --write-result
 | **Qwen3.5-2B（默认）** | **4.26 GB** | **80.8%** | **~0.53 s** |
 | Qwen3.5-4B | 8.7 GB | 未评测 | — |
 
-新增基座：往 `biaochi/engine.py` 的 `MODEL_CHOICES` 里加一条
+新增基座：往 `tiaoyige/engine.py` 的 `MODEL_CHOICES` 里加一条
 `名字 -> (目录名, commit)` 即可。
 
 ---

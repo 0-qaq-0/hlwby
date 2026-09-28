@@ -15,11 +15,11 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from biaochi import DEFAULT_MODEL_DIR, DEFAULT_REVISION, EXAMPLES, Biaochi  # noqa: E402
+from tiaoyige import DEFAULT_MODEL_DIR, DEFAULT_REVISION, EXAMPLES, Tiaoyige  # noqa: E402
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="标尺判定冒烟测试")
+    parser = argparse.ArgumentParser(description="帮你挑一个判定冒烟测试")
     parser.add_argument("--device", default="auto", choices=["auto", "cuda", "cpu"])
     parser.add_argument("--model-dir", type=Path, default=DEFAULT_MODEL_DIR)
     parser.add_argument("--revision", default=DEFAULT_REVISION)
@@ -27,7 +27,7 @@ def main() -> None:
     parser.add_argument("--perms", type=int, default=None, help="选项排列数（默认用引擎默认值）")
     args = parser.parse_args()
 
-    engine = Biaochi(model_dir=args.model_dir, revision=args.revision, device=args.device)
+    engine = Tiaoyige(model_dir=args.model_dir, revision=args.revision, device=args.device)
     t0 = time.perf_counter()
     engine.load()
     print(

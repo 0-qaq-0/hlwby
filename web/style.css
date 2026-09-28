@@ -1,4 +1,4 @@
-/* 标尺 · 判定台 —— 设计系统
+/* 帮你挑一个 · 判定台 —— 设计系统
  *
  * 无构建步骤：这个文件由服务器直接发出去，改完刷新就见效。
  * 主题用 CSS 变量，深色为默认；`html[data-theme="light"]` 覆盖一套浅色。
@@ -85,11 +85,13 @@ kbd {
   margin-bottom: 18px;
 }
 .brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
-/* 字标。用渐变文字，和页面里那些选项字块保持同一套视觉语言。 */
+/* 字标。用渐变文字，和页面里那些选项字块保持同一套视觉语言。
+   名字是五个字（「帮你挑一个」），所以字距收窄一点，别把顶栏撑开。 */
 .wordmark {
-  font-size: 26px; font-weight: 800; letter-spacing: 4px; line-height: 1.1;
+  font-size: 24px; font-weight: 800; letter-spacing: 1px; line-height: 1.1;
   background: linear-gradient(180deg, var(--text) 0%, var(--muted) 140%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
+  white-space: nowrap;
 }
 .brand .ver { font-size: 11px; color: var(--muted-2); font-variant-numeric: tabular-nums; }
 .topbar .spacer { flex: 1 1 auto; }

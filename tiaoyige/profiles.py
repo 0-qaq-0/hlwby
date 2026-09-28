@@ -514,7 +514,7 @@ class ProfileStore:
 
     @staticmethod
     def _bayi_profile() -> Profile:
-        """「八艺」的出处仍然是 ``biaochi/labels.py`` —— 它是唯一权威。"""
+        """「八艺」的出处仍然是 ``tiaoyige/labels.py`` —— 它是唯一权威。"""
         return Profile(
             id=DEFAULT_PROFILE_ID,
             name="八艺",

@@ -14,7 +14,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from biaochi.labels import CRITERION, EXAMPLES, LABEL_IDS, MEME_LABELS  # noqa: E402
+from tiaoyige.labels import CRITERION, EXAMPLES, LABEL_IDS, MEME_LABELS  # noqa: E402
 
 EXPECTED_ORDER = "典孝急乐蚌批赢麻"
 

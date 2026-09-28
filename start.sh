@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 标尺 —— 一键启动（Linux / macOS）
+# 帮你挑一个 —— 一键启动（Linux / macOS）
 #
 # 跟 Windows 的 scripts/launch.ps1 做同样五件事：
 #   1. 找 Python（3.10+）
@@ -75,7 +75,7 @@ PYPI_MIRROR="https://pypi.tuna.tsinghua.edu.cn/simple"
 TORCH_INDEX="https://download.pytorch.org/whl/cu130"
 HF_MIRROR="https://hf-mirror.com"
 
-printf '\n  标尺 —— 这条评论该回哪个字（一键启动）\n'
+printf '\n  帮你挑一个 —— 这条评论该回哪个字（一键启动）\n'
 printf '  项目目录：%s\n\n' "$ROOT"
 
 # 基座名先校验一遍。不校验的话要等到第 4 步才由 python 的 argparse 报错，
@@ -175,7 +175,7 @@ fi
 
 if [ "$(uname -s)" = "Darwin" ]; then
     note "macOS 没有 CUDA：引擎会走 CPU（pick_device 只认 cuda / cpu）"
-    note "torch 的 MPS 加速标尺用不上，所以判一条要几秒，不是零点几秒"
+    note "torch 的 MPS 加速帮你挑一个用不上，所以判一条要几秒，不是零点几秒"
 elif [ "$has_nvidia" -eq 1 ]; then
     cuda_ok=0
     if [ "$torch_ok" -eq 1 ]; then
@@ -283,10 +283,10 @@ sys.exit(0 if sock.connect_ex(('127.0.0.1', $PORT)) == 0 else 1)
     fail "端口 $PORT 已经被别的程序占用。" \
         "办法一：换端口 —— ./start.sh --port $((PORT + 1))" \
         "办法二：找出占用者 —— lsof -i :$PORT  或  ss -ltnp | grep $PORT" \
-        "办法三：如果那就是上次的标尺服务，直接打开 http://127.0.0.1:$PORT/ 就行"
+        "办法三：如果那就是上次的帮你挑一个服务，直接打开 http://127.0.0.1:$PORT/ 就行"
 fi
 
-SERVER_ARGS=(-m biaochi.server --model "$MODEL" --device "$DEVICE" --port "$PORT")
+SERVER_ARGS=(-m tiaoyige.server --model "$MODEL" --device "$DEVICE" --port "$PORT")
 if [ "$OPEN_BROWSER" -eq 1 ]; then SERVER_ARGS+=(--open-browser); fi
 if [ "${#EXTRA[@]}" -gt 0 ]; then SERVER_ARGS+=("${EXTRA[@]}"); fi
 

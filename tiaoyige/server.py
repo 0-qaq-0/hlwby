@@ -1,4 +1,4 @@
-"""标尺判定页面 + JSON API。
+"""帮你挑一个判定页面 + JSON API。
 
 只用标准库，不额外引依赖：模型在启动时加载一次并常驻显存/内存，
 之后每个请求就是一次前向传播。
@@ -28,7 +28,7 @@ from .engine import (
     DEFAULT_PERMUTATIONS,
     DEFAULT_REVISION,
     MODEL_CHOICES,
-    Biaochi,
+    Tiaoyige,
     pick_device,
 )
 from .labels import CRITERION, EXAMPLES, LABELS_BY_ID, MEME_LABELS
@@ -86,8 +86,8 @@ def dataset_summaries() -> list[dict]:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = f"Biaochi/{__version__}"
-    engine: Biaochi  # 由 serve() 注入
+    server_version = f"Tiaoyige/{__version__}"
+    engine: Tiaoyige  # 由 serve() 注入
     store: ProfileStore = ProfileStore()  # 测试可以直接换掉
 
     # -------------------------------------------------------------- 工具
@@ -523,36 +523,36 @@ def serve(
     device: str,
     store: ProfileStore | None = None,
 ) -> None:
-    print(f"[biaochi] 目标设备: {pick_device(device)}")
-    print(f"[biaochi] 加载模型: {model_dir}")
-    engine = Biaochi(model_dir=model_dir, revision=revision, device=device)
+    print(f"[tiaoyige] 目标设备: {pick_device(device)}")
+    print(f"[tiaoyige] 加载模型: {model_dir}")
+    engine = Tiaoyige(model_dir=model_dir, revision=revision, device=device)
     engine.load()
     print(
-        f"[biaochi] 模型就绪，用时 {engine.load_seconds:.1f}s "
+        f"[tiaoyige] 模型就绪，用时 {engine.load_seconds:.1f}s "
         f"({engine.metadata.get('device')}, {engine.metadata.get('dtype')})"
     )
     store = store or ProfileStore()
     profiles = store.list()
-    print(f"[biaochi] 判断类型 {len(profiles)} 套: " + "、".join(p.name for p in profiles))
-    print(f"[biaochi] 词表（八艺）: {''.join(label['id'] for label in MEME_LABELS)}")
+    print(f"[tiaoyige] 判断类型 {len(profiles)} 套: " + "、".join(p.name for p in profiles))
+    print(f"[tiaoyige] 词表（八艺）: {''.join(label['id'] for label in MEME_LABELS)}")
     probe = engine.decide("预热文本")
-    print(f"[biaochi] 一次判定约 {probe['forward_ms']:.0f} ms（{probe['permutations']} 排列）")
+    print(f"[tiaoyige] 一次判定约 {probe['forward_ms']:.0f} ms（{probe['permutations']} 排列）")
 
     Handler.engine = engine
     Handler.store = store
     httpd = ThreadingHTTPServer((host, port), Handler)
     httpd.daemon_threads = True
-    print(f"[biaochi] 页面地址: http://{host}:{port}/", flush=True)
+    print(f"[tiaoyige] 页面地址: http://{host}:{port}/", flush=True)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print("\n[biaochi] 收到中断，正在退出")
+        print("\n[tiaoyige] 收到中断，正在退出")
     finally:
         httpd.server_close()
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="标尺 —— 给一段文本，从你定义的一组选项里挑一个")
+    parser = argparse.ArgumentParser(description="帮你挑一个 —— 给一段文本，从你定义的一组选项里挑一个")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8770)
     parser.add_argument(
