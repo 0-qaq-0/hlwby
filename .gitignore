@@ -1,22 +1,24 @@
-# 虚拟环境
+# 环境
 .venv/
-
-# 模型权重（约 4.3 GB，用 scripts/download_model.py 下载）
-models/
-
-# 上游引擎（用 scripts/setup_vendor.ps1 克隆）
-vendor/
-
-# Python
 __pycache__/
+*.pyc
 *.py[cod]
 *.egg-info/
 .pytest_cache/
+
+# 模型权重（用 scripts/download_model.py 重新拉取）
+models/
+
+# 工具生成的临时缓存（scripts/page_check.py 会往这里写）
+.cache/
 
 # 环境与系统文件
 .env
 .DS_Store
 Thumbs.db
 
-# 无头浏览器等工具的临时缓存
-.cache/
+# 上游引擎 SemIf-OpenJev **故意入库**（vendor/SemIf-OpenJev/）：
+#   本项目的 README 承诺「离线可跑」，所以上游代码按 pinned commit 原样放在树里，
+#   版本号记在 docs/PROVENANCE.md。
+#   如果想改成按需克隆，用 scripts/setup_vendor.ps1，并把下面这行取消注释。
+# vendor/

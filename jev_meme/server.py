@@ -31,12 +31,29 @@ from .labels import CRITERION, EXAMPLES, LABELS_BY_ID, MEME_LABELS
 MAX_BODY_BYTES = 256 * 1024
 MAX_TEXT_CHARS = 20000
 
+#: 请求体被拒时，最多再读掉多少字节。
+#:
+#: 为什么要在报错前读：客户端是按 `Content-Length` 一次性写过来的，
+#: 服务端不读就回响应，客户端可能还在写 —— Windows 上这会变成
+#: `ConnectionAbortedError (WinError 10053)`，测试会随机红。
+#: 有封顶是为了不让一个巨大的 `Content-Length` 把连接拖住。
+MAX_DRAIN_BYTES = 8 * 1024 * 1024
+
 
 class Handler(BaseHTTPRequestHandler):
     server_version = "MemeJev/3.0"
     engine: MemeJev  # 由 serve() 注入
 
     # -------------------------------------------------------------- 工具
+
+    def _drain(self, count: int) -> None:
+        """把已声明但决定不处理的请求体读掉，避免客户端写一半被 RST。"""
+        remaining = count
+        while remaining > 0:
+            chunk = self.rfile.read(min(65536, remaining))
+            if not chunk:
+                break
+            remaining -= len(chunk)
 
     def _send(self, status: int, body: bytes, content_type: str) -> None:
         self.send_response(status)
@@ -74,6 +91,9 @@ class Handler(BaseHTTPRequestHandler):
                     "model_name": Path(self.engine.metadata.get("source", "")).name,
                     "load_seconds": self.engine.load_seconds,
                     "default_permutations": DEFAULT_PERMUTATIONS,
+                    # 锚点（prompt）版本。改了 labels.py 的措辞就该改它 ——
+                    # 不然「这个数字是哪版锚点测的」就说不清了。
+                    "prompt_version": self.engine.metadata.get("prompt_version", ""),
                     "labels": [label["id"] for label in MEME_LABELS],
                 },
             )
@@ -129,6 +149,7 @@ class Handler(BaseHTTPRequestHandler):
             self._error(400, "Content-Length 不合法")
             return
         if length <= 0 or length > MAX_BODY_BYTES:
+            self._drain(min(length, MAX_DRAIN_BYTES))
             self._error(400, f"请求体长度必须在 1 到 {MAX_BODY_BYTES} 字节之间")
             return
 

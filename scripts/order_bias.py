@@ -68,7 +68,13 @@ def main() -> None:
         probs_by_label: dict[str, float] = defaultdict(float)
         winners = []
         for index, order in enumerate(orders):
-            result = engine.choose(row["text"], order, CRITERION)
+            # **必须显式传 permutations=1。**
+            # 这个脚本要量的是「只用这一种排列」时的准确率；
+            # 不传的话 choose() 会按默认值再展开 5 种排列取平均，
+            # 于是每一种「单排列」其实都是 5 排列的平均值 ——
+            # 量出来的极差和稳定性全是假的（这个 bug 真实存在过，
+            # 直到和 bias_probe.py 的数字对不上才被发现）。
+            result = engine.choose(row["text"], order, CRITERION, permutations=1)
             per_order_hits[index] += result["winner"] == row["label"]
             winners.append(result["winner"])
             for item in result["ranking"]:

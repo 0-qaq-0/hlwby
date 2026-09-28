@@ -2,9 +2,7 @@
 
 把**别人的一条评论**粘进来，看看该用哪个字回他。
 
-打开页面 → 粘一条评论 → **半秒内**拿到八个字的概率分布。
-
-词表八个字 —— **典 孝 急 乐 蚌 批 赢 麻**：
+词表是八个字 —— **典 孝 急 乐 蚌 批 赢 麻**：
 
 | 字 | 什么时候回 | 视角 |
 |---|---|---|
@@ -19,12 +17,18 @@
 
 ![判定页面](docs/screenshot.png)
 
-干净测试集 24 条实测 **96%**（3/5/7 排列都是 96%），页面示例 **8/8**。
-完整评测记录 —— 包括失败方案和翻车过程 —— 见 [docs/EVAL.md](docs/EVAL.md)。
+打开页面 → 粘一条评论 → **半秒**拿到八个字的概率分布。
+
+干净测试集 **52 条实测 80.8%**（5 排列，95% CI 68.1%~89.2%），页面示例 **8/8**。
+完整评测记录 —— 包括失败方案和两次翻车 —— 见 [docs/EVAL.md](docs/EVAL.md)。
+
+> **这个数字改过一次口径，从 96% 掉到 81%。** 原因见
+> [第六节](#六这个数字为什么从-96-掉到-81)。简单说：原来那套「干净」测试集里，
+> 24 条有 14 条是锚点例句的逐字复制，96% 是自问自答测出来的。
 
 ---
 
-## 一、这是什么
+## 一、这是什么：一个「不写字」的判定器
 
 **Jev** 是 [TypeSafe AI](https://openjev.com/) 提出的「决策模型」形态：模型**不生成文字**，
 而是接收 *state（要判定的材料）+ criterion（判定标准）+ options（候选选项）*，
@@ -36,15 +40,27 @@
 | | |
 |---|---|
 | 引擎 | **[TheoLeeCJ/SemIf-OpenJev](https://github.com/TheoLeeCJ/SemIf-OpenJev)** —— 原名 OpenJev，MIT |
-| 基座模型 | **[Qwen/Qwen3.5-2B](https://huggingface.co/Qwen/Qwen3.5-2B)**，Apache-2.0，4.3 GB |
+| 基座模型 | **[Qwen/Qwen3.5-2B](https://huggingface.co/Qwen/Qwen3.5-2B)**，Apache-2.0，4.26 GB |
 | 服务 | Python 标准库 HTTP 服务，**零 Web 框架依赖** |
 | 前端 | 单文件 `web/index.html`，**无构建步骤** |
 
-上游引擎代码**原样引用、不做修改**，由 `scripts/setup_vendor.ps1` 按固定 commit 克隆到 `vendor/`；
-基座模型由 `scripts/download_model.py` 下载到 `models/`。两者都不进 git（见 `.gitignore`）。
+### ⚠️ 关于「开源版 Jev」这个说法
 
-> **为什么是 2B**：Jev 只做**一次前向**，不做自回归生成，所以参数翻倍并不会让延迟翻倍。
-> 实测 0.6B 和 2B 的中位延迟都在同一量级，但准确率差一大截。
+**SemIf 不是 Jev 的开源版。** 它是**独立项目**，复现的是 Jev 公开描述过的
+**接口形态**，不含 Jev 未公开的模型与训练。
+
+上游 README 的原话：
+
+> Independent project; not affiliated with Jev or TypeSafe.
+>
+> Jev is TypeSafe's closed service for runtime-defined semantic decisions.
+> This project reproduces that **interface pattern** with open models;
+> it does not reproduce Jev's undisclosed model or training.
+
+所以本项目说的是：**用的是独立开源实现 SemIf-OpenJev 的判定机制，
+复现 Jev 提出的「决策模型」形态，与 Jev / TypeSafe AI 无隶属关系。**
+
+来源、版本、许可的完整记录见 **[docs/PROVENANCE.md](docs/PROVENANCE.md)**。
 
 ---
 
@@ -66,36 +82,41 @@
    selected = logits[slot_ids]        # 只取 A..H 这八个位置
    probs    = softmax(selected)       # 八个字上的分布
    ```
-5. **多种选项排列取平均（抗位置偏置）。** 见下一节 —— 这一步不是锦上添花，是修 bug。
+5. **多种选项排列取平均（抗位置偏置）。** 见下一节 —— 这一步不是锦上添花，
+   是修 bug。
 
 ### 位置偏置：这个引擎最大的坑
 
-Jev 的读法是「看模型下一个 token 是哪个字母」，而**模型对字母位置本身有偏好**。
-同一条文本、同一个模型，**只把八个选项换个顺序**，结果就变：
+模型对**字母位置本身**有偏好。同一条文本、同一个模型，**只把选项换个顺序**，
+52 条干净集上的实测：
 
 | 选项顺序 | 准确率 |
 |---|---:|
-| 原始顺序 | 96% |
-| 完全反转 | **79%** |
-| 随机排列 1 / 2 / 3 | 96% / 88% / 83% |
+| 原始顺序 | 71% |
+| 完全反转 | 60% |
+| 随机排列 1 | 67% |
+| 随机排列 2 | 62% |
+| 随机排列 3 | 52% |
 
-**只有 67% 的样本在 5 种排列下给出同一个答案** —— 剩下 1/3 的结果取决于你碰巧怎么排选项。
+**极差 19 个百分点** —— 这一部分纯粹是字母位置噪声，与语义无关。
+而且**只有 33% 的样本在 5 种排列下给出同一个答案**（17/52）。
 
 所以默认会用 5 种排列各判一次，按标签把概率平均。因为这些排列共享同一段文本，
 只有末尾的选项列表不同，所以左填充塞进**一个 batch** 跑，不是跑 5 次。
 
 页面上三档可切：
 
-| 档位 | 排列数 | 准确率 | 端到端 |
-|---|---:|---:|---:|
-| 快 | 3 | 96% | ~0.33 s |
-| **标准（默认）** | **5** | **96%** | **~0.54 s** |
-| 更稳 | 7 | 96% | ~0.75 s |
+| 档位 | 排列数 | 准确率 | 95% CI | 端到端中位 |
+|---|---:|---:|---|---:|
+| 快 | 3 | 86.5% | 74.7%~93.3% | ~0.32 s |
+| **标准（默认）** | **5** | **80.8%** | **68.1%~89.2%** | **~0.53 s** |
+| 更稳 | 7 | 82.7% | 70.3%~90.6% | ~0.73 s |
 
-> **不提供「单次前向」这一档。** 单排列只有 53%~87%，而且错例几乎全部塌缩到同一个词
-> —— 那不是速度取舍，是正确性问题。
+> **三档的差异不显著。** 52 条样本上，86.5% 和 80.8% 只差 3 条，
+> 置信区间大面积重叠。**别把「快档更准」当结论** —— 它是噪声。
+> 单排列那一档倒是明确不行（52%~71%，见上表），所以不提供。
 
-输入很长时会自动下调排列数（`TOKEN_BUDGET = 7500`），把延迟压在同一个量级。
+输入很长时会自动下调排列数（`TOKEN_BUDGET`），把延迟压在同一个量级。
 
 概率是**在这八个选项之间归一化**的条件概率，不是校准过的置信度——
 上游对此的措辞是 `conditional option score; uncalibrated as decision confidence`。
@@ -106,80 +127,71 @@ Jev 的读法是「看模型下一个 token 是哪个字母」，而**模型对�
 ## 三、跑起来
 
 ```powershell
-# 1) 克隆
 git clone https://github.com/0-qaq-0/hlwby.git
 cd hlwby
 
-# 2) 一键启动
-.\run.ps1
-```
-
-`run.ps1` 会依次完成：
-
-| 步骤 | 做什么 | 说明 |
-|---|---|---|
-| 1 | 建 `.venv` 并装依赖 | 需要 Python 3.10+，`py -3.10` |
-| 2 | 装 CUDA 版 torch | pip 默认给 CPU-only！Blackwell/RTX 50 系需要 cu128+ |
-| 3 | 克隆上游引擎到 `vendor/` | 固定 commit，可复现 |
-| 4 | 下载基座模型到 `models/` | 约 4.3 GB，只需要一次 |
-| 5 | 启动服务 | `http://127.0.0.1:8770/` |
-
-想分步手动跑：
-
-```powershell
+# 1) 建环境（Python 3.10+）
 py -3.10 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 
-# CUDA 版 torch（Blackwell / RTX 50 系需要 cu128 及以上）
+# 2) 装 CUDA 版 torch（pip 默认给的是 CPU-only！）
+#    Blackwell / RTX 50 系需要 cu128 及以上
 .\.venv\Scripts\python.exe -m pip install --force-reinstall `
     "torch==2.14.0+cu130" --index-url https://download.pytorch.org/whl/cu130
 
-# 上游引擎 + 基座模型
-.\scripts\setup_vendor.ps1
+# 3) 下载基座模型到项目内（约 4.3 GB）
 .\.venv\Scripts\python.exe scripts\download_model.py --model qwen3.5-2b
 
-# 起服务
+# 4) 起服务
 .\.venv\Scripts\python.exe -m jev_meme.server
 ```
 
-> **没有 NVIDIA 显卡也能跑**，把 device 换成 `cpu` 即可，只是慢；
-> 延迟数字都是 GPU 空闲时测的，机器上跑着吃显存的东西时会慢 2~3 倍（准确性不受影响）。
+然后打开 **<http://127.0.0.1:8770/>**。
 
----
+上游引擎已经随仓库分发（`vendor/SemIf-OpenJev/`，pinned commit），**不需要额外克隆**。
 
-## 四、命令行自测
+也可以用 `.\run.ps1` 一步到位（它会自己检查上面几步）。
+
+> **没有 NVIDIA 显卡也能跑**，把 device 换成 `cpu` 即可（`--device cpu`），只是慢很多。
+> README 里的延迟数字都是 GPU 空闲时测的。
+
+### 命令行自测
 
 ```powershell
 $py = ".\.venv\Scripts\python.exe"
 
-# 跑一遍八个示例，打印命中率和延迟
-& $py scripts\smoke_test.py
+# 不占 GPU、秒回的两个检查 —— 改完先跑这两个
+& $py -m unittest discover -s tests -t .   # 58 个单元测试
+& $py scripts\leak_check.py                # 测试集有没有抄锚点
+& $py scripts\labels_check.py              # 词表格式一致性
+
+# 主评测：干净集 + 对照集，三个速度档（要 GPU）
+& $py scripts\evaluate.py --perms 3,5,7
 
 # 只判一条评论
-& $py scripts\smoke_test.py --text "真正的成熟，是不再向任何人解释自己。"
-
-# 主评测：干净集 + 对照集，三个速度档
-& $py scripts\evaluate.py --perms 3,5,7
+& $py scripts\smoke_test.py --text "人最大的敌人，从来都是自己。"
 
 # 位置偏置诊断（同一条文本只换选项顺序，看答案会不会变）
 & $py scripts\order_bias.py --device cuda --perms 5
 
+# 锚点消融：谁把判定吸走了
+& $py scripts\anchor_tune.py
+
 # 锚点写法 / 问法对比（含已知会失败的 relational 写法）
 & $py scripts\experiment.py --variants shipped,short,keyword,relational
-
-# 词汇表一致性检查（不占 GPU，秒回）
-& $py scripts\labels_check.py
 
 # 对着跑起来的服务实测
 & $py scripts\live_check.py
 ```
 
-### API
+---
+
+## 四、API
 
 ```powershell
 curl http://127.0.0.1:8770/api/health
 
-# permutations 可选，3=快 / 5=标准（默认）/ 7=更稳
+# permutations: 3=快 / 5=标准（默认）/ 7=更稳
 curl -X POST http://127.0.0.1:8770/api/decide `
      -H "Content-Type: application/json" `
      -d '{"text":"人最大的敌人，从来都是自己。","permutations":5}'
@@ -204,11 +216,119 @@ curl -X POST http://127.0.0.1:8770/api/decide `
 }
 ```
 
-`GET /api/labels` 返回完整词表定义（每个字的锚点描述和页面示例）。
+`GET /api/labels` 会返回完整词表定义（每个字的锚点描述和页面示例）。
 
 ---
 
-## 五、改词表 = 改锚点，不用重训
+## 五、项目结构
+
+```
+八艺/
+├── vendor/SemIf-OpenJev/       # 开源实现（上游原样，MIT，pinned commit）
+│   └── src/semif_phase1/       #   core.py / direct.py 是判定核心
+├── models/Qwen3.5-2B/          # 基座模型权重（项目内，离线可跑，不入库）
+├── jev_meme/
+│   ├── labels.py               # ★ 八个字的锚点描述 + 页面示例 + 问法
+│   ├── engine.py               # SemIf 读出机制 + 批量排列平均 + 自适应降档
+│   └── server.py               # 标准库 HTTP 服务 + JSON API
+├── web/index.html              # 判定页面（单文件，无构建步骤）
+├── tests/                      # ★ 58 个单元测试，只用标准库 unittest
+├── data/
+│   ├── eval_clean.jsonl        # ★ 干净测试集（52 条），以它为准
+│   └── eval_overlap.jsonl      # 对照集：页面示例变体 + 已知泄漏样本
+├── docs/
+│   ├── EVAL.md                 # ★ 实测数字，含位置偏置和两次翻车
+│   ├── PROVENANCE.md           # ★ 来源与归属：哪些是别人的，哪些是自己的
+│   └── screenshot.png
+├── scripts/
+│   ├── download_model.py       # 拉基座模型到项目内
+│   ├── setup_vendor.ps1        # 按 pinned commit 重新克隆上游引擎（可选）
+│   ├── leak_check.py           # ★ 测试集 / 页面示例 与锚点的泄漏检查
+│   ├── anchor_tune.py          # ★ 锚点消融：找出把判定吸走的那个词
+│   ├── smoke_test.py           # 冒烟测试 / 延迟测量
+│   ├── evaluate.py             # ★ 主评测（干净集 + 对照集，含 Wilson CI）
+│   ├── experiment.py           # 锚点写法 / 问法对比
+│   ├── order_bias.py           # 位置偏置诊断
+│   ├── bench_perms.py          # 批量 vs 串行、可复现性
+│   ├── live_check.py           # 对着跑起来的服务实测
+│   ├── labels_check.py         # 词汇表一致性检查
+│   ├── page_check.py           # 页面静态检查
+│   └── api_check.py            # API 校验与错误路径测试
+├── LICENSE                     # MIT
+└── run.ps1
+```
+
+---
+
+## 六、这个数字为什么从 96% 掉到 81%
+
+这是本项目最值得记的一件事，也是「严谨」这个词的具体含义。
+
+### 第一层：测试集在抄锚点
+
+最初测出来是 **24/24 = 100%**。那是假的 —— 先写测试集、再写锚点，
+无意识地复用了同一批句子。换成当时以为「不重合」的一套，掉到 **50%**。
+这一段写在 [docs/EVAL.md](docs/EVAL.md) 第 3 节。
+
+后来建了 `data/eval_clean.jsonl`，靠**人工**保证它和锚点不重合，
+测出 **96%**，写进了 README。
+
+### 第二层：人工保证失效了
+
+锚点后来又改过几版（现在是 `meme-direct-zh-v4`），
+**没有任何机制保证测试集一直干净**。于是加了 `scripts/leak_check.py`：
+把两边都去掉标点、比字符 n-gram 的重合率。
+
+一跑就发现，那 24 条里有 **14 条**和锚点例句重合度 ≥ 0.30，
+其中 8 条是 **1.00（逐字相同）**：
+
+| 测试集里的句子 | 重合度 |
+|---|---:|
+| 说了这么多，那你倒是给个解决方案啊。 | 1.00 |
+| 追星的都是脑残，这点没什么好争的。 | 1.00 |
+| 玩游戏就是不务正业，不管你怎么解释都一样。 | 1.00 |
+| 成年人的崩溃，都是从缺钱开始的。 | 1.00 |
+| 所谓成熟，就是把哭声调成静音的过程。 | 1.00 |
+| 真正厉害的人，从来都不动声色。 | 1.00 |
+| 嗯嗯，受教了。 | 1.00 |
+| 苹果的生态就是比安卓好用，用过就知道了，别不服气。 | 0.73 |
+
+**96% 是在一个自己抄自己的集子上测出来的。** 把泄漏句挪进对照集、
+重写干净集并扩到 52 条之后，同一个模型的真实水平是 **73%**。
+
+### 第三层：找到那个「吸铁石」
+
+重测之后错例长这样：14 个错里 **11 个判成了「典」**，跨了 5 个不同的标准答案。
+一个词把别人全吃掉，说明它不是判得准，是**描述太泛**：
+
+> 「这段话在讲道理、分析原因、下判断 —— 一段不长不短的普通论述。」
+
+后半句几乎对所有中文评论都成立 —— 它不是判别特征，是吸铁石。
+`scripts/anchor_tune.py` 做了剂量反应验证：
+
+| 「典」的描述 | 准确率 | 判成「典」的错例 |
+|---|---:|---:|
+| 换成更泛的说法 | 69.2% | 15 |
+| **原来（带那句）** | **73.1%** | **10** |
+| 删掉那句 | **80.8%** | **3** |
+
+单调关系说明这不是噪声。删掉那一句之后：**73.1% → 80.8%**。
+
+### 结论
+
+**当前 README 和片子里的数字，是修完这三层之后重测的：52 条，80.8%。**
+
+三道防线现在都在仓库里，改完就能跑：
+
+```powershell
+& $py scripts\leak_check.py                 # 测试集有没有抄锚点
+& $py scripts\anchor_tune.py                # 描述是不是太泛
+& $py -m unittest discover -s tests -t .    # 上面两条的回归测试
+```
+
+---
+
+## 七、改词表 = 改锚点，不用重训
 
 八个字的全部定义都写在 `jev_meme/labels.py` 的 `MEME_LABELS` 里，
 每个字一段 `description` —— **这段文本是推理时才读进去的，不写进任何权重**。
@@ -218,7 +338,7 @@ curl -X POST http://127.0.0.1:8770/api/decide `
 * 想加字？往列表里加一条（上限 16 个，受 `A`–`P` 槽位限制）。
 * 想换一整套词表？只改这个文件。
 
-**改锚点时记住这几条实测结论**（详见 [docs/EVAL.md](docs/EVAL.md)）：
+**改锚点时记住这几条实测结论**（见 [docs/EVAL.md](docs/EVAL.md)）：
 
 > 1. **描述「文本长什么样」，而不是「说话人在干什么」。** 这条最重要 ——
 >    这套定义是关系式的（「当对方辩论时」），照字面写锚点会全军覆没；
@@ -228,28 +348,33 @@ curl -X POST http://127.0.0.1:8770/api/decide `
 > 2. **给例句，别写抽象定义**（多锚点 96% vs 长抽象定义 23%）。
 > 3. **要示范，不要解释。** 加「区别：这不是 X」式元说明反而更差，
 >    因为描述里提到别的词名会把概率漏给那些词。
-> 4. **别为了长度好看去删例句。** 删过几条去凑长度，准确率立刻从 96% 掉到 88%。
-> 5. **页面示例要挑该词的典型样本**，边界样本会让系统看起来像坏的。
+> 4. **别写泛化的形状描述。** 「一段不长不短的普通论述」这种话对什么文本都成立，
+>    会把概率全吸过去。实测删掉它准确率 +7.7 个百分点。
+> 5. **别为了长度好看去删例句。** 我删过几条去凑长度，准确率立刻从 96% 掉到 88%。
+> 6. **页面示例要挑该词的典型样本**，而且**不能是锚点例句的复制品** ——
+>    那是自问自答，`scripts/leak_check.py` 会把它标出来。
 
-改完跑一下 `scripts\labels_check.py` 确认格式，再用 `scripts\evaluate.py`
-在**干净的**那套测试集上验证 —— 别拿调参用的那套自欺欺人。
+改完跑一下 `scripts\leak_check.py` + `scripts\labels_check.py` 确认格式，
+再用 `scripts\evaluate.py` 在**干净的**那套测试集上验证 ——
+别拿调参用的那套自欺欺人。
 
 这正是 Jev「semantic if」模式的意义：**判定逻辑是运行时的数据，不是训练出来的参数。**
 
 ---
 
-## 六、换模型
+## 八、换模型
 
 引擎与模型解耦，换基座只改一处，或者直接用命令行参数：
 
 ```powershell
-.\.venv\Scripts\python.exe -m jev_meme.server --model qwen3-0.6b
+# 更小更快（1.4 GB），准确率会掉
+& $py -m jev_meme.server --model qwen3-0.6b
 ```
 
 | 基座 | 体积 | 准确率 | 中位延迟 |
 |---|---:|---:|---:|
-| Qwen3-0.6B | 1.4 GB | 63%（早期测试集） | ~102 ms |
-| **Qwen3.5-2B（默认）** | **4.3 GB** | **96%** | **~0.54 s** |
+| Qwen3-0.6B | 1.41 GB | 未在当前干净集上评测 | — |
+| **Qwen3.5-2B（默认）** | **4.26 GB** | **80.8%** | **~0.53 s** |
 | Qwen3.5-4B | 8.7 GB | 未评测 | — |
 
 新增基座：往 `jev_meme/engine.py` 的 `MODEL_CHOICES` 里加一条
@@ -257,84 +382,40 @@ curl -X POST http://127.0.0.1:8770/api/decide `
 
 ---
 
-## 七、目录结构
+## 九、已知限制
 
-```
-hlwby/
-├── jev_meme/
-│   ├── labels.py               # ★ 八个字的锚点描述 + 页面示例 + 问法
-│   ├── engine.py               # SemIf 读出机制 + 批量排列平均 + 自适应降档
-│   └── server.py               # 标准库 HTTP 服务 + JSON API
-├── scripts/
-│   ├── setup_vendor.ps1        # 克隆上游引擎（固定 commit）
-│   ├── download_model.py       # 拉基座模型到 models/
-│   ├── smoke_test.py           # 冒烟测试 / 延迟测量
-│   ├── evaluate.py             # ★ 主评测（干净集 + 对照集）
-│   ├── order_bias.py           # 位置偏置诊断
-│   ├── experiment.py           # 锚点写法 / 问法对比
-│   ├── bench_perms.py          # 批量 vs 串行、可复现性
-│   ├── live_check.py           # 对着跑起来的服务实测
-│   ├── labels_check.py         # 词汇表一致性检查
-│   ├── page_check.py           # 页面静态检查
-│   └── api_check.py            # API 校验与错误路径测试
-├── data/
-│   ├── eval_clean.jsonl        # ★ 干净测试集（24 条），以它为准
-│   └── eval_overlap.jsonl      # 对照集，有句子和锚点撞过车
-├── docs/
-│   ├── EVAL.md                 # ★ 实测数字，含位置偏置和被否掉的方案
-│   └── screenshot.png
-├── web/
-│   └── index.html              # 判定页面（单文件，无构建步骤）
-├── requirements.txt
-├── run.ps1                     # 一键启动
-├── LICENSE                     # MIT
-└── README.md
-```
-
----
-
-## 八、已知限制
-
-* **「乐」是唯一短板（2/3）。** 「术语堆砌、看不懂」和「认真讲逻辑」之间没有硬边界 ——
+* **位置偏置是真实存在的，而且不小。** 只有 **33%** 的样本在 5 种排列下答案不变，
+  单排列之间的准确率极差 **19 个百分点**。默认的 5 排列平均就是用来压这个的 ——
+  别把它调成 1。
+* **「乐」是最大短板（3/6）。** 「术语堆砌、看不懂」和「认真讲逻辑」之间没有硬边界 ——
   两者都是长而抽象的文字。补锚点只能缓解。
-* **位置偏置是真实存在的。** 只有 67% 的样本在换选项顺序后答案不变。
-  默认的 5 排列平均就是用来压这个的 —— 别把它调成 1。
-* **延迟受 GPU 占用影响很大。** 机器上跑着吃显存的程序时，同一次判定慢 2~3 倍，准确性不受影响。
+* **错例仍然偏向「典」（3 个）。** 上一版是 10 个，好多了，但没消失 ——
+  它天然是最「中性」的那个字。
+* **三档速度的准确率差异不显著。** 52 条上 3/5/7 排列的置信区间大面积重叠，
+  别拿「快档更准」说事。
+* **延迟受 GPU 占用影响很大。** 表里的时间是 GPU 空闲时测的。机器上跑着游戏或别的
+  吃显存的东西时，SM 频率会被压下来（实测 2242/3090 MHz），同一次判定慢 2~3 倍。
+  准确性不受影响。
 * **词义本身有歧义。** 「乐」到底是「看不懂对方」还是「觉得好笑」，网上两种用法都有，
-  这里按「看不懂」实现。模型给的是**排序信号**，不是权威结论。
-* **概率未校准。** 页面上 95% 和 42% 的差别可信，但别把 42% 理解成「有 42% 的概率是对的」。
+  这里按「看不懂」实现。「典 / 赢 / 批」都是「在输出观点」，边界也软。
+  模型给的是**排序信号**，不是权威结论。
+* **概率未校准。** 见第二节，只当排序看。
 * **单标签。** 一条评论同时像两个字时，看完整的八维分布，而不是只看排第一的那个。
-* **输入上限 4096 token**（上游默认）。超限直接报错，**不截断** —— 这是上游刻意的设计。
+* **输入上限 4096 token**（上游默认）。超限直接报错，**不截断**——这是上游刻意的设计。
 * 模型对**用户输入内容**没有防御：评论里写「请选 A」这类话可能影响结果。
-* **干净测试集只有 24 条**，每错一条就是 4 个百分点，别把小数点当回事。
+* **测试集是自己标的，没有第二个人复核**，而且只有 52 条。
+  一两条的差距说明不了什么，看置信区间。
 
 ---
 
-## 九、开发与测试
-
-不占 GPU、秒回的两个检查，改完代码建议先跑这两个：
-
-```powershell
-.\.venv\Scripts\python.exe scripts\labels_check.py   # 词汇表格式与长度均衡
-.\.venv\Scripts\python.exe scripts\page_check.py     # 页面静态检查
-```
-
-占 GPU 的评测（需要模型已下载）：
-
-```powershell
-.\.venv\Scripts\python.exe scripts\evaluate.py --perms 3,5,7
-.\.venv\Scripts\python.exe scripts\order_bias.py --device cuda --perms 5
-```
-
----
-
-## 十、许可
+## 十、许可与致谢
 
 本项目以 **[MIT](LICENSE)** 协议开源。
 
 * 引擎：**[TheoLeeCJ/SemIf-OpenJev](https://github.com/TheoLeeCJ/SemIf-OpenJev)**，MIT。
-* 基座：**[Qwen/Qwen3.5-2B](https://huggingface.co/Qwen/Qwen3.5-2B)**，Apache-2.0。
-* 「Jev」及 TypeSafe 相关名称归其各自所有者；本项目与 TypeSafe AI、SemIf 作者均无隶属关系。
-* 「八艺」这套说法来自网络社区，本项目只是把它做成了可判定的标签集。
-* 上游判定代码原样引用，**未做修改**；本项目在外面包了四层：中文 system prompt、
+  上游判定代码原样引用，**未做修改**；本项目在外面包了四层：中文 system prompt、
   把输出接回八个字、多种选项排列取平均（修位置偏置）、以及自适应降档。
+* 基座：**[Qwen/Qwen3.5-2B](https://github.com/QwenLM)**，Apache-2.0。权重不随本项目分发。
+* 「Jev」及 TypeSafe 相关名称归其各自所有者；本项目与 TypeSafe AI、SemIf 作者
+  **均无隶属关系**。详见 [docs/PROVENANCE.md](docs/PROVENANCE.md)。
+* 「八艺」这套说法来自网络社区，本项目只是把它做成了可判定的标签集。

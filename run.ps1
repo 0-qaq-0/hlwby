@@ -24,9 +24,6 @@ if (-not (Test-Path $py)) {
         --index-url https://download.pytorch.org/whl/cu130
 }
 
-# 上游引擎（vendor/）不入 git，第一次跑需要先克隆
-& (Join-Path $root "scripts\setup_vendor.ps1")
-
 # 目录名 = 模型名，例如 qwen3.5-2b -> Qwen3.5-2B
 $dirName = switch ($Model) {
     "qwen3-0.6b" { "Qwen3-0.6B" }
